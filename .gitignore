@@ -1,0 +1,40 @@
+# Dependencies
+node_modules/
+.pnp
+.pnp.js
+
+# Build outputs
+.next/
+out/
+build/
+dist/
+dist-desktop/
+
+# Binaries & Bundled runtimes (exceed GitHub size limits)
+bin/
+desktop/bin/
+*.exe
+*.zip
+*.blockmap
+
+# Environment & Local settings
+.env
+.env*.local
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# Database & Local user data
+data/*.db
+data/*.db-journal
+data/*.db-wal
+data/*.db-shm
+data/*.bak
+data/logs/
+
+# IDE & OS files
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db

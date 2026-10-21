@@ -1,0 +1,436 @@
+// LIBRARY_STORE — POS & Store Management System
+// Local transactional database schema (SQLite)
+// Architecture: Core Engine (Store Settings / RBAC / Audit)
+// + Retail Domain (Catalog / Batches / Sales / Purchases / Loyalty)
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+// ============================================================
+// CORE ENGINE — CONFIGURATION / TENANCY
+// ============================================================
+
+/// Store configuration store (id = tenantId or 'default').
+/// Structured JSON config blocks — business data lives in normalized tables.
+/// id='__device__' holds installation-level identity (deviceId) for the
+/// pre-activation state. Structured JSON config blocks — business data
+/// itself lives in normalized tables.
+model AppSettings {
+  id           String   @id // tenantId or '__device__'
+  business     String   @default("{}") // JSON BusinessConfig
+  branding     String   @default("{}") // JSON BrandingConfig
+  hardware     String   @default("{}") // JSON HardwareConfig
+  pos          String   @default("{}") // JSON PosConfig
+  localization String   @default("{}") // JSON LocalizationConfig
+  backup       String   @default("{}") // JSON BackupConfig
+  system       String   @default("{}") // JSON SystemConfig
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+}
+
+// ============================================================
+// CORE ENGINE — AUTH / RBAC / AUDIT
+// ============================================================
+
+/// System roles are shared across tenants (global keys); custom roles may
+/// carry a tenantId. `key` stays globally unique for compatibility.
+model Role {
+  id          String   @id @default(cuid())
+  tenantId    String?
+  key         String   @unique // owner | manager | cashier | inventory | purchasing | accountant | custom-*
+  nameAr      String
+  nameEn      String
+  description String?
+  permissions String // JSON array of permission keys
+  isSystem    Boolean  @default(false)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  users       User[]
+}
+
+model User {
+  id           String    @id @default(cuid())
+  tenantId     String    @default("")
+  username     String
+  passwordHash String
+  displayName  String
+  phone        String?
+  roleKey      String
+  role         Role      @relation(fields: [roleKey], references: [key])
+  active       Boolean   @default(true)
+  lastLoginAt  DateTime?
+  sessions     Session[]
+  sales        Sale[]
+  createdAt    DateTime  @default(now())
+  updatedAt    DateTime  @updatedAt
+
+  @@unique([tenantId, username])
+}
+
+model Session {
+  id        String   @id // opaque token
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  createdAt DateTime @default(now())
+  expiresAt DateTime
+}
+
+model AuditLog {
+  id        String   @id @default(cuid())
+  tenantId  String   @default("")
+  userId    String?
+  username  String   @default("system")
+  action    String // e.g. SALE_CREATE, PRODUCT_EDIT, TENANT_ACTIVATE
+  entity    String   @default("")
+  entityId  String?
+  metadata  String   @default("{}") // JSON
+  result    String   @default("SUCCESS") // SUCCESS | FAILURE
+  createdAt DateTime @default(now())
+
+  @@index([createdAt])
+  @@index([action])
+  @@index([tenantId])
+}
+
+/// Atomic named counters for document numbering (sales, purchases, returns).
+/// Composite key: per-tenant sequences.
+model Counter {
+  tenantId String
+  key      String // e.g. sale, purchase, return
+  value    Int    @default(0)
+
+  @@id([tenantId, key])
+}
+
+// ============================================================
+// SUPERMARKET DOMAIN — CATALOG
+// ============================================================
+
+model Category {
+  id          String    @id @default(cuid())
+  tenantId    String    @default("")
+  nameAr      String
+  nameEn      String?
+  description String?
+  active      Boolean   @default(true)
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+  products    Product[]
+
+  @@unique([tenantId, nameAr])
+}
+
+model Supplier {
+  id        String     @id @default(cuid())
+  tenantId  String     @default("")
+  name      String
+  phone     String?
+  email     String?
+  address   String?
+  notes     String?
+  active    Boolean    @default(true)
+  createdAt DateTime   @default(now())
+  updatedAt DateTime   @updatedAt
+  batches   Batch[]
+  purchases Purchase[]
+}
+
+model Customer {
+  id        String          @id @default(cuid())
+  tenantId  String          @default("")
+  name      String
+  phone     String?
+  email     String?
+  address   String?
+  notes     String?
+  active    Boolean         @default(true)
+  createdAt DateTime        @default(now())
+  updatedAt DateTime        @updatedAt
+  sales     Sale[]
+  loyalty   LoyaltyEvent[]
+}
+
+model Product {
+  id              String         @id @default(cuid())
+  tenantId        String         @default("")
+  barcode         String?
+  sku             String
+  nameAr          String
+  nameEn          String?
+  genericName     String?
+  categoryId      String?
+  category        Category?      @relation(fields: [categoryId], references: [id])
+  manufacturer    String?
+  unit            String         @default("piece") // piece | pack | box | kg | g | l | ml ...
+  packSize        Int            @default(1)
+  isWeighable     Boolean        @default(false) // supermarket weighable products (Float quantities)
+  purchasePrice   Float          @default(0)
+  sellingPrice    Float          @default(0)
+  minSellingPrice Float?
+  taxRate         Float          @default(0)
+  reorderLevel    Int            @default(10)
+  active          Boolean        @default(true)
+  notes           String?
+  createdAt       DateTime       @default(now())
+  updatedAt       DateTime       @updatedAt
+  batches         Batch[]
+  movements       StockMovement[]
+  purchaseItems   PurchaseItem[]
+  saleItems       SaleItem[]
+
+  @@unique([tenantId, barcode])
+  @@unique([tenantId, sku])
+  @@index([tenantId])
+}
+
+/// Batch / lot — the unit of traceable stock. Inventory is batch-aware (FEFO).
+/// quantity is Float to support weighable supermarket products (kg / l / ml).
+model Batch {
+  id          String     @id @default(cuid())
+  tenantId    String     @default("")
+  productId   String
+  product     Product    @relation(fields: [productId], references: [id])
+  batchNo     String
+  expiryDate  DateTime?
+  quantity    Float      @default(0)
+  costPrice   Float      @default(0)
+  sellPrice   Float?
+  supplierId  String?
+  supplier    Supplier?  @relation(fields: [supplierId], references: [id])
+  purchaseId  String?
+  status      String     @default("ACTIVE") // ACTIVE | DEPLETED | DAMAGED | EXPIRED
+  createdAt   DateTime   @default(now())
+  updatedAt   DateTime   @updatedAt
+
+  @@index([productId])
+  @@index([expiryDate])
+  @@index([tenantId])
+  @@unique([productId, batchNo, createdAt]) // tolerate repeated batch numbers across time; uniqueness validated in service layer
+}
+
+model StockMovement {
+  id        String   @id @default(cuid())
+  tenantId  String   @default("")
+  productId String
+  product   Product  @relation(fields: [productId], references: [id])
+  batchId   String?
+  type      String // PURCHASE_RECEIVE | SALE | SALE_CANCEL_RESTOCK | RETURN_IN | RETURN_OUT | ADJUSTMENT | DAMAGE | EXPIRY_WRITEOFF | STOCKTAKE | INITIAL
+  quantity  Float // signed: +in / -out
+  unitCost  Float?
+  refType   String?
+  refId     String?
+  note      String?
+  userId    String?
+  createdAt DateTime @default(now())
+
+  @@index([productId])
+  @@index([createdAt])
+  @@index([type])
+  @@index([tenantId])
+}
+
+// ============================================================
+// SUPERMARKET DOMAIN — PURCHASING
+// ============================================================
+
+model Purchase {
+  id            String          @id @default(cuid())
+  tenantId      String          @default("")
+  invoiceNo     String          @unique
+  supplierId    String
+  supplier      Supplier        @relation(fields: [supplierId], references: [id])
+  status        String          @default("DRAFT") // DRAFT | RECEIVED | CANCELLED
+  subtotal      Float           @default(0)
+  discount      Float           @default(0)
+  tax           Float           @default(0)
+  total         Float           @default(0)
+  paidAmount    Float           @default(0)
+  paymentStatus String          @default("UNPAID") // UNPAID | PARTIAL | PAID
+  notes         String?
+  userId        String?
+  receivedAt    DateTime?
+  createdAt     DateTime        @default(now())
+  updatedAt     DateTime        @updatedAt
+  items         PurchaseItem[]
+}
+
+model PurchaseItem {
+  id          String   @id @default(cuid())
+  tenantId    String   @default("")
+  purchaseId  String
+  purchase    Purchase @relation(fields: [purchaseId], references: [id], onDelete: Cascade)
+  productId   String
+  product     Product  @relation(fields: [productId], references: [id])
+  batchNo     String?
+  expiryDate  DateTime?
+  quantity    Float    @default(0)
+  unitCost    Float    @default(0)
+  receivedQty Float    @default(0)
+  total       Float    @default(0)
+  batchId     String? // created batch on receive
+}
+
+// ============================================================
+// SUPERMARKET DOMAIN — SALES / POS
+// ============================================================
+
+model Sale {
+  id            String      @id @default(cuid())
+  tenantId      String      @default("")
+  invoiceNo     String      @unique
+  cashierId     String
+  cashier       User        @relation(fields: [cashierId], references: [id])
+  customerId    String?
+  customer      Customer?   @relation(fields: [customerId], references: [id])
+  status        String      @default("COMPLETED") // COMPLETED | CANCELLED | RETURNED | PARTIALLY_RETURNED
+  subtotal      Float       @default(0)
+  discount      Float       @default(0)
+  tax           Float       @default(0)
+  total         Float       @default(0)
+  paidAmount    Float       @default(0)
+  changeAmount  Float       @default(0)
+  paymentMethod String      @default("cash") // cash | card | ...
+  notes         String?
+  items         SaleItem[]
+  returns       Return[]
+  createdAt     DateTime    @default(now())
+  updatedAt     DateTime    @updatedAt
+
+  @@index([createdAt])
+  @@index([cashierId])
+  @@index([tenantId])
+}
+
+model SaleItem {
+  id          String    @id @default(cuid())
+  tenantId    String    @default("")
+  saleId      String
+  sale        Sale      @relation(fields: [saleId], references: [id], onDelete: Cascade)
+  productId   String
+  product     Product   @relation(fields: [productId], references: [id])
+  batchId     String?
+  batchNo     String?
+  expiryDate  DateTime?
+  productName String // snapshot
+  quantity    Float
+  unitPrice   Float
+  discount    Float     @default(0)
+  total       Float
+  costPrice   Float     @default(0)
+  returnedQty Float     @default(0)
+}
+
+/// Suspended POS carts (park a sale and resume later).
+model SuspendedCart {
+  id        String   @id @default(cuid())
+  tenantId  String   @default("")
+  label     String
+  cart      String // JSON cart snapshot
+  userId    String
+  createdAt DateTime @default(now())
+}
+
+// ============================================================
+// SUPERMARKET DOMAIN — RETURNS
+// ============================================================
+
+model Return {
+  id        String       @id @default(cuid())
+  tenantId  String       @default("")
+  returnNo  String       @unique
+  saleId    String
+  sale      Sale         @relation(fields: [saleId], references: [id])
+  userId    String?
+  total     Float        @default(0)
+  reason    String?
+  items     ReturnItem[]
+  createdAt DateTime     @default(now())
+
+  @@index([saleId])
+}
+
+model ReturnItem {
+  id         String  @id @default(cuid())
+  tenantId   String  @default("")
+  returnId   String
+  return     Return  @relation(fields: [returnId], references: [id], onDelete: Cascade)
+  saleItemId String
+  productId  String
+  batchId    String?
+  quantity   Float
+  unitPrice  Float
+  total      Float
+}
+
+// ============================================================
+// SUPERMARKET DOMAIN — STOCKTAKING
+// ============================================================
+
+model StocktakeSession {
+  id        String          @id @default(cuid())
+  tenantId  String          @default("")
+  name      String
+  status    String          @default("OPEN") // OPEN | APPLIED | CANCELLED
+  userId    String?
+  appliedAt DateTime?
+  createdAt DateTime        @default(now())
+  lines     StocktakeLine[]
+}
+
+model StocktakeLine {
+  id            String           @id @default(cuid())
+  tenantId      String           @default("")
+  sessionId     String
+  session       StocktakeSession @relation(fields: [sessionId], references: [id], onDelete: Cascade)
+  productId     String
+  systemQty     Float            @default(0)
+  countedQty    Float
+  difference    Float            @default(0)
+  batchId       String?
+}
+
+// ============================================================
+// SYSTEM — BACKUPS
+// ============================================================
+
+model BackupRecord {
+  id           String   @id @default(cuid())
+  tenantId     String   @default("")
+  filename     String   @unique
+  sizeBytes    Int      @default(0)
+  type         String   @default("MANUAL") // MANUAL | AUTO | PRE_RESTORE
+  entityCounts String   @default("{}") // JSON counts per table
+  note         String?
+  userId       String?
+  createdAt    DateTime @default(now())
+}
+
+// ============================================================
+// SUPERMARKET DOMAIN — CUSTOMER LOYALTY
+// ============================================================
+
+/// Append-only ledger of loyalty point events (earn/redeem/adjust).
+/// Balance is derived: SUM(points) per customer — auditable and drift-proof.
+model LoyaltyEvent {
+  id         String   @id @default(cuid())
+  tenantId   String   @default("")
+  customerId String
+  customer   Customer @relation(fields: [customerId], references: [id])
+  saleId     String? // tied to a sale (EARN + REDEEM can both reference one sale)
+  type       String // EARN | REDEEM | ADJUST
+  points     Int // signed: +earn / -redeem
+  value      Float    @default(0) // EGP value when redeemed (rate applied)
+  note       String?
+  userId     String?
+  createdAt  DateTime @default(now())
+
+  @@unique([saleId, type]) // one EARN and one REDEEM per sale max
+  @@index([customerId])
+  @@index([createdAt])
+}

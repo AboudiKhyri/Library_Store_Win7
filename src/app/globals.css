@@ -1,0 +1,507 @@
+/**
+ * LIBRARY_STORE — Offline Store & POS Management System
+ * Theme Styles & Utility Classes
+ */
+
+@import "tailwindcss";
+@import "tw-animate-css";
+
+@custom-variant dark (&:is(.dark *));
+
+@theme inline {
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --font-sans: var(--font-cairo), "Segoe UI", Tahoma, "Noto Sans Arabic", sans-serif;
+  --font-mono: var(--font-geist-mono);
+  --color-sidebar-ring: var(--sidebar-ring);
+  --color-sidebar-border: var(--sidebar-border);
+  --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
+  --color-sidebar-accent: var(--sidebar-accent);
+  --color-sidebar-primary-foreground: var(--sidebar-primary-foreground);
+  --color-sidebar-primary: var(--sidebar-primary);
+  --color-sidebar-foreground: var(--sidebar-foreground);
+  --color-sidebar: var(--sidebar);
+  --color-chart-5: var(--chart-5);
+  --color-chart-4: var(--chart-4);
+  --color-chart-3: var(--chart-3);
+  --color-chart-2: var(--chart-2);
+  --color-chart-1: var(--chart-1);
+  --color-ring: var(--ring);
+  --color-input: var(--input);
+  --color-border: var(--border);
+  --color-destructive: var(--destructive);
+  --color-destructive-foreground: var(--destructive-foreground);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-accent: var(--accent);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-muted: var(--muted);
+  --color-secondary-foreground: var(--secondary-foreground);
+  --color-secondary: var(--secondary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-primary: var(--primary);
+  --color-popover-foreground: var(--popover-foreground);
+  --color-popover: var(--popover);
+  --color-card-foreground: var(--card-foreground);
+  --color-card: var(--card);
+  --color-success: var(--success);
+  --color-success-foreground: var(--success-foreground);
+  --color-warning: var(--warning);
+  --color-warning-foreground: var(--warning-foreground);
+  --color-danger: var(--danger);
+  --color-danger-foreground: var(--danger-foreground);
+  --radius-sm: calc(var(--radius) - 4px);
+  --radius-md: calc(var(--radius) - 2px);
+  --radius-lg: var(--radius);
+  --radius-xl: calc(var(--radius) + 4px);
+}
+
+/* ============================================================
+   LIBRARY_STORE THEME
+   Universal sRGB + RGBA Channels (100% compatible with Chromium 108 / Electron 22)
+   All Token Pairs meet WCAG 2.1 AA (>= 4.5:1 for normal text)
+   ============================================================ */
+
+:root {
+  --radius: 0.75rem;
+  /* light theme */
+  --background: #f7f9fa;
+  --background-rgb: 247, 249, 250;
+  --foreground: #1c262d;
+  --foreground-rgb: 28, 38, 45;
+  --card: #ffffff;
+  --card-rgb: 255, 255, 255;
+  --card-foreground: #1c262d;
+  --popover: #ffffff;
+  --popover-rgb: 255, 255, 255;
+  --popover-foreground: #1c262d;
+  --primary: #0a7c97;
+  --primary-rgb: 10, 124, 151;
+  --primary-foreground: #ffffff;
+  --secondary: #e2e8f0;
+  --secondary-rgb: 226, 232, 240;
+  --secondary-foreground: #1e293b;
+  --muted: #f1f5f9;
+  --muted-rgb: 241, 245, 249;
+  --muted-foreground: #556476;
+  --muted-foreground-rgb: 85, 100, 118;
+  --accent: #cffafe;
+  --accent-rgb: 207, 250, 254;
+  --accent-foreground: #155e75;
+  --destructive: #dc2626;
+  --destructive-rgb: 220, 38, 38;
+  --destructive-foreground: #ffffff;
+  --border: #e2e8f0;
+  --border-rgb: 226, 232, 240;
+  --input: #e2e8f0;
+  --input-rgb: 226, 232, 240;
+  --ring: #0a7c97;
+  --ring-rgb: 10, 124, 151;
+  --success: #15803d;
+  --success-rgb: 21, 128, 61;
+  --success-foreground: #ffffff;
+  --warning: #b45309;
+  --warning-rgb: 180, 83, 9;
+  --warning-foreground: #ffffff;
+  --danger: #dc2626;
+  --danger-rgb: 220, 38, 38;
+  --danger-foreground: #ffffff;
+  --chart-1: #0a7c97;
+  --chart-2: #0d9488;
+  --chart-3: #b45309;
+  --chart-4: #8b5cf6;
+  --chart-5: #f43f5e;
+  --sidebar: #f8fafc;
+  --sidebar-foreground: #1e293b;
+  --sidebar-foreground-rgb: 30, 41, 59;
+  --sidebar-primary: #0a7c97;
+  --sidebar-primary-foreground: #ffffff;
+  --sidebar-accent: #e2e8f0;
+  --sidebar-accent-foreground: #0f172a;
+  --sidebar-border: #e2e8f0;
+  --sidebar-ring: #0a7c97;
+
+  /* Barcode Action Buttons (WCAG AA compliant in light & dark) */
+  --barcode-btn-border: #b45309;
+  --barcode-btn-fg: #b45309;
+  --barcode-btn-bg: transparent;
+  --barcode-btn-hover-bg: rgba(180, 83, 9, 0.08);
+
+  --scan-btn-bg: #f3e8ff;
+  --scan-btn-border: #c084fc;
+  --scan-btn-fg: #6b21a8;
+  --scan-btn-hover-bg: #e9d5ff;
+}
+
+.dark {
+  /* dark theme — deep charcoal-navy with cyan energy */
+  --background: #080f16;
+  --background-rgb: 8, 15, 22;
+  --foreground: #e1eaec;
+  --foreground-rgb: 225, 234, 236;
+  --card: #101820;
+  --card-rgb: 16, 24, 32;
+  --card-foreground: #e1eaec;
+  --popover: #101820;
+  --popover-rgb: 16, 24, 32;
+  --popover-foreground: #e1eaec;
+  --primary: #36cad8;
+  --primary-rgb: 54, 202, 216;
+  --primary-foreground: #020f19;
+  --secondary: #1a252f;
+  --secondary-rgb: 26, 37, 47;
+  --secondary-foreground: #cfd9dd;
+  --muted: #19222a;
+  --muted-rgb: 25, 34, 42;
+  --muted-foreground: #8d9ba4;
+  --muted-foreground-rgb: 141, 155, 164;
+  --accent: #05343d;
+  --accent-rgb: 5, 52, 61;
+  --accent-foreground: #a0dae0;
+  --destructive: #f05653;
+  --destructive-rgb: 240, 86, 83;
+  --destructive-foreground: #020f19;
+  --border: #212a32;
+  --border-rgb: 33, 42, 50;
+  --input: #212a32;
+  --input-rgb: 33, 42, 50;
+  --ring: #36cad8;
+  --ring-rgb: 54, 202, 216;
+  --success: #22c55e;
+  --success-rgb: 34, 197, 94;
+  --success-foreground: #020f19;
+  --warning: #f59e0b;
+  --warning-rgb: 245, 158, 11;
+  --warning-foreground: #020f19;
+  --danger: #f05653;
+  --danger-rgb: 240, 86, 83;
+  --danger-foreground: #020f19;
+  --chart-1: #36cad8;
+  --chart-2: #2dd4bf;
+  --chart-3: #f59e0b;
+  --chart-4: #c084fc;
+  --chart-5: #fb7185;
+  --sidebar: #0b131c;
+  --sidebar-foreground: #cfd9dd;
+  --sidebar-foreground-rgb: 207, 217, 221;
+  --sidebar-primary: #36cad8;
+  --sidebar-primary-foreground: #020f19;
+  --sidebar-accent: #151e28;
+  --sidebar-accent-foreground: #e1eaec;
+  --sidebar-border: #1e2833;
+  --sidebar-ring: #36cad8;
+
+  /* Barcode Action Buttons (Dark theme) */
+  --barcode-btn-border: #f59e0b;
+  --barcode-btn-fg: #f59e0b;
+  --barcode-btn-bg: transparent;
+  --barcode-btn-hover-bg: rgba(245, 158, 11, 0.12);
+
+  --scan-btn-bg: #2e1065;
+  --scan-btn-border: #7e22ce;
+  --scan-btn-fg: #d8b4fe;
+  --scan-btn-hover-bg: #3b0764;
+}
+
+/* ============================================================
+   CHROME 108 / ELECTRON 22 OPACITY COMPATIBILITY LAYER
+   Overrides Tailwind 4's color-mix() rules with true RGBA opacity.
+   ============================================================ */
+
+.bg-primary\/5  { background-color: rgba(var(--primary-rgb), 0.05) !important; }
+.bg-primary\/8  { background-color: rgba(var(--primary-rgb), 0.08) !important; }
+.bg-primary\/10 { background-color: rgba(var(--primary-rgb), 0.10) !important; }
+.bg-primary\/12 { background-color: rgba(var(--primary-rgb), 0.12) !important; }
+.bg-primary\/15 { background-color: rgba(var(--primary-rgb), 0.15) !important; }
+.bg-primary\/20 { background-color: rgba(var(--primary-rgb), 0.20) !important; }
+.bg-primary\/25 { background-color: rgba(var(--primary-rgb), 0.25) !important; }
+.bg-primary\/30 { background-color: rgba(var(--primary-rgb), 0.30) !important; }
+.bg-primary\/60 { background-color: rgba(var(--primary-rgb), 0.60) !important; }
+.bg-primary\/90 { background-color: rgba(var(--primary-rgb), 0.90) !important; }
+
+.border-primary\/20 { border-color: rgba(var(--primary-rgb), 0.20) !important; }
+.border-primary\/25 { border-color: rgba(var(--primary-rgb), 0.25) !important; }
+.border-primary\/30 { border-color: rgba(var(--primary-rgb), 0.30) !important; }
+.border-primary\/40 { border-color: rgba(var(--primary-rgb), 0.40) !important; }
+.border-primary\/50 { border-color: rgba(var(--primary-rgb), 0.50) !important; }
+.border-primary\/60 { border-color: rgba(var(--primary-rgb), 0.60) !important; }
+
+.ring-primary\/30 { --tw-ring-color: rgba(var(--primary-rgb), 0.30) !important; }
+.ring-ring\/50 { --tw-ring-color: rgba(var(--ring-rgb), 0.50) !important; }
+
+.bg-muted\/20 { background-color: rgba(var(--muted-rgb), 0.20) !important; }
+.bg-muted\/30 { background-color: rgba(var(--muted-rgb), 0.30) !important; }
+.bg-muted\/40 { background-color: rgba(var(--muted-rgb), 0.40) !important; }
+.bg-muted\/50 { background-color: rgba(var(--muted-rgb), 0.50) !important; }
+.bg-muted\/60 { background-color: rgba(var(--muted-rgb), 0.60) !important; }
+.bg-muted\/70 { background-color: rgba(var(--muted-rgb), 0.70) !important; }
+.bg-muted\/95 { background-color: rgba(var(--muted-rgb), 0.95) !important; }
+.border-muted\/40 { border-color: rgba(var(--muted-rgb), 0.40) !important; }
+
+.bg-muted-foreground\/30 { background-color: rgba(var(--muted-foreground-rgb), 0.30) !important; }
+.text-muted-foreground\/60 { color: rgba(var(--muted-foreground-rgb), 0.60) !important; }
+.text-muted-foreground\/70 { color: rgba(var(--muted-foreground-rgb), 0.70) !important; }
+
+.border-border\/50 { border-color: rgba(var(--border-rgb), 0.50) !important; }
+.border-border\/60 { border-color: rgba(var(--border-rgb), 0.60) !important; }
+
+.bg-input\/30 { background-color: rgba(var(--input-rgb), 0.30) !important; }
+.bg-input\/50 { background-color: rgba(var(--input-rgb), 0.50) !important; }
+.bg-input\/80 { background-color: rgba(var(--input-rgb), 0.80) !important; }
+
+.bg-destructive\/10 { background-color: rgba(var(--destructive-rgb), 0.10) !important; }
+.bg-destructive\/20 { background-color: rgba(var(--destructive-rgb), 0.20) !important; }
+.bg-destructive\/60 { background-color: rgba(var(--destructive-rgb), 0.60) !important; }
+.bg-destructive\/90 { background-color: rgba(var(--destructive-rgb), 0.90) !important; }
+.border-destructive\/30 { border-color: rgba(var(--destructive-rgb), 0.30) !important; }
+.ring-destructive\/20 { --tw-ring-color: rgba(var(--destructive-rgb), 0.20) !important; }
+.ring-destructive\/40 { --tw-ring-color: rgba(var(--destructive-rgb), 0.40) !important; }
+.text-destructive\/90 { color: rgba(var(--destructive-rgb), 0.90) !important; }
+
+.bg-accent\/50 { background-color: rgba(var(--accent-rgb), 0.50) !important; }
+.bg-background\/60 { background-color: rgba(var(--background-rgb), 0.60) !important; }
+.bg-background\/80 { background-color: rgba(var(--background-rgb), 0.80) !important; }
+.bg-card\/60 { background-color: rgba(var(--card-rgb), 0.60) !important; }
+.text-foreground\/50 { color: rgba(var(--foreground-rgb), 0.50) !important; }
+.text-foreground\/90 { color: rgba(var(--foreground-rgb), 0.90) !important; }
+
+.bg-secondary\/80 { background-color: rgba(var(--secondary-rgb), 0.80) !important; }
+.bg-secondary\/90 { background-color: rgba(var(--secondary-rgb), 0.90) !important; }
+
+.hover\:bg-secondary\/80:hover { background-color: rgba(var(--secondary-rgb), 0.80) !important; }
+.hover\:bg-primary\/90:hover { background-color: rgba(var(--primary-rgb), 0.90) !important; }
+.hover\:bg-accent\/50:hover { background-color: rgba(var(--accent-rgb), 0.50) !important; }
+.hover\:bg-destructive\/90:hover { background-color: rgba(var(--destructive-rgb), 0.90) !important; }
+.hover\:border-primary\/40:hover { border-color: rgba(var(--primary-rgb), 0.40) !important; }
+
+.dark .dark\:hover\:bg-accent\/50:hover { background-color: rgba(var(--accent-rgb), 0.50) !important; }
+.dark .dark\:bg-destructive\/60 { background-color: rgba(var(--destructive-rgb), 0.60) !important; }
+.dark .dark\:bg-input\/30 { background-color: rgba(var(--input-rgb), 0.30) !important; }
+.dark .dark\:hover\:bg-input\/50:hover { background-color: rgba(var(--input-rgb), 0.50) !important; }
+.dark .dark\:data-\[state\=unchecked\]\:bg-input\/80[data-state=unchecked] { background-color: rgba(var(--input-rgb), 0.80) !important; }
+
+.focus-visible\:ring-ring\/50:focus-visible { --tw-ring-color: rgba(var(--ring-rgb), 0.50) !important; }
+
+/* Status alert / badge variables */
+.bg-\[var\(--warning\)\]\/5  { background-color: rgba(var(--warning-rgb), 0.05) !important; }
+.bg-\[var\(--warning\)\]\/8  { background-color: rgba(var(--warning-rgb), 0.08) !important; }
+.bg-\[var\(--warning\)\]\/10 { background-color: rgba(var(--warning-rgb), 0.10) !important; }
+.bg-\[var\(--warning\)\]\/12 { background-color: rgba(var(--warning-rgb), 0.12) !important; }
+.border-\[var\(--warning\)\]\/25 { border-color: rgba(var(--warning-rgb), 0.25) !important; }
+.border-\[var\(--warning\)\]\/30 { border-color: rgba(var(--warning-rgb), 0.30) !important; }
+.border-\[var\(--warning\)\]\/40 { border-color: rgba(var(--warning-rgb), 0.40) !important; }
+
+.bg-\[var\(--danger\)\]\/5  { background-color: rgba(var(--danger-rgb), 0.05) !important; }
+.bg-\[var\(--danger\)\]\/8  { background-color: rgba(var(--danger-rgb), 0.08) !important; }
+.bg-\[var\(--danger\)\]\/10 { background-color: rgba(var(--danger-rgb), 0.10) !important; }
+.bg-\[var\(--danger\)\]\/12 { background-color: rgba(var(--danger-rgb), 0.12) !important; }
+.bg-\[var\(--danger\)\]\/15 { background-color: rgba(var(--danger-rgb), 0.15) !important; }
+.bg-\[var\(--danger\)\]\/90 { background-color: rgba(var(--danger-rgb), 0.90) !important; }
+.hover\:bg-\[var\(--danger\)\]\/90:hover { background-color: rgba(var(--danger-rgb), 0.90) !important; }
+.border-\[var\(--danger\)\]\/25 { border-color: rgba(var(--danger-rgb), 0.25) !important; }
+.border-\[var\(--danger\)\]\/30 { border-color: rgba(var(--danger-rgb), 0.30) !important; }
+.border-\[var\(--danger\)\]\/40 { border-color: rgba(var(--danger-rgb), 0.40) !important; }
+
+.bg-\[var\(--success\)\]\/10 { background-color: rgba(var(--success-rgb), 0.10) !important; }
+.bg-\[var\(--success\)\]\/12 { background-color: rgba(var(--success-rgb), 0.12) !important; }
+.border-\[var\(--success\)\]\/25 { border-color: rgba(var(--success-rgb), 0.25) !important; }
+.border-\[var\(--success\)\]\/30 { border-color: rgba(var(--success-rgb), 0.30) !important; }
+.border-\[var\(--success\)\]\/40 { border-color: rgba(var(--success-rgb), 0.40) !important; }
+
+.text-\[var\(--sidebar-foreground\)\]\/80 { color: rgba(var(--sidebar-foreground-rgb), 0.80) !important; }
+
+/* ============================================================
+   RTL LOGICAL CONTROLS & DIRECTION CORRECTIONS
+   Guarantees thumbs and indicators stay strictly inside boundaries
+   ============================================================ */
+
+[dir="rtl"] [data-slot="switch-thumb"][data-state="checked"] {
+  transform: translateX(calc(-100% + 2px)) !important;
+}
+[dir="rtl"] [data-slot="switch-thumb"][data-state="unchecked"] {
+  transform: translateX(0) !important;
+}
+[dir="ltr"] [data-slot="switch-thumb"][data-state="checked"] {
+  transform: translateX(calc(100% - 2px)) !important;
+}
+[dir="ltr"] [data-slot="switch-thumb"][data-state="unchecked"] {
+  transform: translateX(0) !important;
+}
+
+@layer base {
+  * {
+    @apply border-border outline-ring/50;
+  }
+  body {
+    @apply bg-background text-foreground;
+    /* Cairo is self-hosted via next/font (CSS variable) — see app/layout.tsx */
+    font-family: var(--font-cairo), "Segoe UI", Tahoma, "Noto Sans Arabic", sans-serif;
+  }
+  html {
+    scrollbar-color: var(--border) transparent;
+  }
+}
+
+/* subtle scrollbars for dense operational tables */
+.qx-scroll::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+.qx-scroll::-webkit-scrollbar-thumb {
+  background: var(--border);
+  border-radius: 8px;
+}
+.qx-scroll::-webkit-scrollbar-thumb:hover {
+  background: var(--muted-foreground);
+}
+
+/* Signature glow for brand elements */
+.qx-glow {
+  box-shadow: 0 0 16px -2px rgba(var(--primary-rgb), 0.45) !important;
+}
+.qx-glow-text {
+  text-shadow: 0 0 14px rgba(var(--primary-rgb), 0.60) !important;
+}
+
+/* receipt print (thermal-style 58/80mm) */
+@media print {
+  body * {
+    visibility: hidden;
+  }
+  #qx-receipt,
+  #qx-receipt *,
+  #qx-report-print,
+  #qx-report-print *,
+  #qx-labels-print,
+  #qx-labels-print * {
+    visibility: visible;
+  }
+  #qx-receipt {
+    position: absolute;
+    inset-inline-start: 0;
+    top: 0;
+    width: 100%;
+    background: white;
+    color: black;
+  }
+  #qx-report-print {
+    position: absolute;
+    inset-inline-start: 0;
+    top: 0;
+    width: 100%;
+    background: white;
+    color: black;
+  }
+  #qx-report-print thead {
+    display: table-header-group; /* repeat header row on every printed page */
+  }
+  #qx-report-print tr,
+  #qx-labels-print .label-cell {
+    break-inside: avoid;
+  }
+  #qx-labels-print {
+    position: absolute;
+    inset-inline-start: 0;
+    top: 0;
+    width: 100%;
+    background: white;
+    color: black;
+  }
+  @page {
+    margin: 10mm;
+  }
+}
+
+/* report print scope — forces light-theme tokens so theme-colored cells print legibly on white */
+#qx-report-print {
+  --background: #ffffff;
+  --foreground: #111111;
+  --muted-foreground: #555555;
+  --muted: #f3f4f6;
+  --border: #d1d5db;
+  --primary: #0a7c97;
+  --success: #15803d;
+  --warning: #b45309;
+  --danger: #dc2626;
+  --popover: #ffffff;
+  --popover-foreground: #111111;
+}
+
+/* view transition — subtle rise+fade on every screen switch (RTL-aware) */
+.view-transition {
+  animation: qx-view-in 0.28s cubic-bezier(0.22, 1, 0.36, 1);
+}
+@keyframes qx-view-in {
+  from {
+    opacity: 0;
+    transform: translateY(8px) scale(0.995);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .view-transition {
+    animation: none;
+  }
+}
+
+/* number inputs: keep numerals LTR inside RTL layouts */
+.qx-num {
+  direction: ltr;
+  unicode-bidi: embed;
+  text-align: start;
+}
+
+/* ============================================================
+   BARCODE ACTION BUTTONS
+   Inline action buttons beside Barcode input (Add/Edit Product)
+   ============================================================ */
+
+.btn-barcode-generate {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-width: 1.5px;
+  border-style: solid;
+  border-color: var(--barcode-btn-border);
+  color: var(--barcode-btn-fg);
+  background-color: var(--barcode-btn-bg);
+  transition: all 0.15s cubic-bezier(0.4, 0, 0.2, 1);
+}
+.btn-barcode-generate:hover:not(:disabled) {
+  background-color: var(--barcode-btn-hover-bg);
+  filter: brightness(1.05);
+}
+.btn-barcode-generate:focus-visible {
+  outline: 2px solid var(--barcode-btn-border);
+  outline-offset: 2px;
+}
+.btn-barcode-generate:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+
+.btn-barcode-scan {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-width: 1px;
+  border-style: solid;
+  border-color: var(--scan-btn-border);
+  color: var(--scan-btn-fg);
+  background-color: var(--scan-btn-bg);
+  transition: all 0.15s cubic-bezier(0.4, 0, 0.2, 1);
+}
+.btn-barcode-scan:hover:not(:disabled) {
+  background-color: var(--scan-btn-hover-bg);
+  filter: brightness(1.03);
+}
+.btn-barcode-scan:focus-visible {
+  outline: 2px solid var(--scan-btn-border);
+  outline-offset: 2px;
+}
+.btn-barcode-scan:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}

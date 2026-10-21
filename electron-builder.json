@@ -1,0 +1,59 @@
+{
+  "$schema": "https://raw.githubusercontent.com/electron-userland/electron-builder/master/packages/app-builder-lib/scheme.json",
+  "appId": "com.library.supermarket",
+  "productName": "Library Store",
+  "copyright": "© 2026 Library Store",
+  "directories": {
+    "output": "dist-desktop",
+    "buildResources": "desktop"
+  },
+  "electronVersion": "22.3.27",
+  "npmRebuild": false,
+  "nodeGypRebuild": false,
+  "publish": null,
+  "files": [
+    "desktop/main.js",
+    "desktop/engine/**/*",
+    "desktop/icons/**/*",
+    "!**/node_modules/**/*"
+  ],
+  "extraResources": [
+    {
+      "from": "desktop/bin/node.exe",
+      "to": "bin/node.exe"
+    },
+    {
+      "from": "server",
+      "to": "server"
+    },
+    {
+      "from": "server/node_modules",
+      "to": "server/node_modules"
+    },
+    {
+      "from": "out",
+      "to": "client"
+    }
+  ],
+  "win": {
+    "target": [
+      {
+        "target": "nsis",
+        "arch": ["x64"]
+      }
+    ],
+    "icon": "desktop/icons/icon.ico"
+  },
+  "nsis": {
+    "oneClick": false,
+    "perMachine": true,
+    "allowToChangeInstallationDirectory": true,
+    "createDesktopShortcut": true,
+    "createStartMenuShortcut": true,
+    "shortcutName": "Library Store",
+    "installerIcon": "desktop/icons/icon.ico",
+    "uninstallerIcon": "desktop/icons/icon.ico",
+    "uninstallDisplayName": "Library Store",
+    "artifactName": "Library_Store_Win7_Setup_v${version}.${ext}"
+  }
+}

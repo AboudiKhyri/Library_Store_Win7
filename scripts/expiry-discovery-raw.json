@@ -1,0 +1,2440 @@
+{
+  "docs/DATABASE.md": [
+    {
+      "file": "docs/DATABASE.md",
+      "line": 18,
+      "pattern": "/expiry/i",
+      "text": "| `Batch` | Traceable stock units with expiry dates, cost, and FEFO inventory status |"
+    }
+  ],
+  "docs/TESTING.md": [
+    {
+      "file": "docs/TESTING.md",
+      "line": 48,
+      "pattern": "/\\bFEFO\\b/i",
+      "text": "- Batch allocation (FEFO) applied"
+    }
+  ],
+  "README.md": [
+    {
+      "file": "README.md",
+      "line": 17,
+      "pattern": "/\\bFEFO\\b/i",
+      "text": "- **إدارة المخزون والباتشات (Batches):** تتبع تواريخ الصلاحية وتطبيق سياسة ما ينتهي أولاً يخرج أولاً (FEFO) والتنبيه المبكر للنواقص."
+    },
+    {
+      "file": "README.md",
+      "line": 46,
+      "pattern": "/صلاحية/",
+      "text": "- **الصلاحية (Role):** المالك / مدير النظام (`Owner / Super Admin`)"
+    }
+  ],
+  "scripts/copy-standalone.mjs": [
+    {
+      "file": "scripts/copy-standalone.mjs",
+      "line": 40,
+      "pattern": "/\\bsweep\\b/i",
+      "text": "// Packaging-artifact pruning — the standalone sweep mirrors project files"
+    }
+  ],
+  "scripts/discover-expiry.cjs": [
+    {
+      "file": "scripts/discover-expiry.cjs",
+      "line": 2,
+      "pattern": "/expiry/i",
+      "text": "* Discovery Script for Expiry/FEFO references"
+    },
+    {
+      "file": "scripts/discover-expiry.cjs",
+      "line": 11,
+      "pattern": "/expiry/i",
+      "text": "/expiry/i,"
+    },
+    {
+      "file": "scripts/discover-expiry.cjs",
+      "line": 12,
+      "pattern": "/expired/i",
+      "text": "/expired/i,"
+    },
+    {
+      "file": "scripts/discover-expiry.cjs",
+      "line": 13,
+      "pattern": "/expiring/i",
+      "text": "/expiring/i,"
+    },
+    {
+      "file": "scripts/discover-expiry.cjs",
+      "line": 14,
+      "pattern": "/expiry/i",
+      "text": "/near[-_]?expiry/i,"
+    },
+    {
+      "file": "scripts/discover-expiry.cjs",
+      "line": 19,
+      "pattern": "/expiry/i",
+      "text": "/EXPIRY_WRITEOFF/,"
+    },
+    {
+      "file": "scripts/discover-expiry.cjs",
+      "line": 20,
+      "pattern": "/تاريخ الانتهاء/",
+      "text": "/تاريخ الانتهاء/,"
+    },
+    {
+      "file": "scripts/discover-expiry.cjs",
+      "line": 21,
+      "pattern": "/منتهي/",
+      "text": "/منتهي/,"
+    },
+    {
+      "file": "scripts/discover-expiry.cjs",
+      "line": 22,
+      "pattern": "/صلاحية/",
+      "text": "/صلاحية/,"
+    },
+    {
+      "file": "scripts/discover-expiry.cjs",
+      "line": 23,
+      "pattern": "/صلاحية/",
+      "text": "/الصلاحية/,"
+    },
+    {
+      "file": "scripts/discover-expiry.cjs",
+      "line": 24,
+      "pattern": "/قارب/",
+      "text": "/قارب/,"
+    },
+    {
+      "file": "scripts/discover-expiry.cjs",
+      "line": 75,
+      "pattern": "/expiry/i",
+      "text": "fs.writeFileSync('scripts/expiry-discovery-raw.json', JSON.stringify(byFile, null, 2), 'utf8');"
+    },
+    {
+      "file": "scripts/discover-expiry.cjs",
+      "line": 76,
+      "pattern": "/expiry/i",
+      "text": "console.log(`Saved raw discovery to scripts/expiry-discovery-raw.json. Files count: ${Object.keys(byFile).length}`);"
+    }
+  ],
+  "server/api.js": [
+    {
+      "file": "server/api.js",
+      "line": 51,
+      "pattern": "/صلاحية/",
+      "text": "if (!user.permissions.includes(perm)) throw ApiError('FORBIDDEN', `ليس لديك صلاحية (${perm})`, 403);"
+    },
+    {
+      "file": "server/api.js",
+      "line": 697,
+      "pattern": "/expiry/i",
+      "text": "const batches = db.prepare('SELECT b.*, s.name as supplierName FROM \"Batch\" b LEFT JOIN \"Supplier\" s ON b.supplierId=s.id WHERE b.productId=@id AND b.tenantId=@tenantId ORDER BY b.expiryDate ASC NULLS LAST, b.createdAt ASC').all({ id: row.id, tenantId: 'default' });"
+    },
+    {
+      "file": "server/api.js",
+      "line": 726,
+      "pattern": "/expiry/i",
+      "text": "expiryDate: b.expiryDate ? (typeof b.expiryDate === 'string' ? b.expiryDate : new Date(b.expiryDate).toISOString()) : null,"
+    },
+    {
+      "file": "server/api.js",
+      "line": 805,
+      "pattern": "/expired/i",
+      "text": "const filter = req.query.filter; // 'expired' | 'near' | 'valid' | 'depleted'"
+    },
+    {
+      "file": "server/api.js",
+      "line": 809,
+      "pattern": "/expiry/i",
+      "text": "const warningDays = (settings.pos && settings.pos.expiryWarningDays) || 30;"
+    },
+    {
+      "file": "server/api.js",
+      "line": 824,
+      "pattern": "/expired/i",
+      "text": "if (filter === 'expired') {"
+    },
+    {
+      "file": "server/api.js",
+      "line": 825,
+      "pattern": "/expiry/i",
+      "text": "where += \" AND (b.status='EXPIRED' OR (b.expiryDate IS NOT NULL AND b.expiryDate < @todayIso))\";"
+    },
+    {
+      "file": "server/api.js",
+      "line": 828,
+      "pattern": "/expiry/i",
+      "text": "where += \" AND b.status='ACTIVE' AND b.quantity > 0 AND b.expiryDate >= @todayIso AND b.expiryDate <= @nearCutoff\";"
+    },
+    {
+      "file": "server/api.js",
+      "line": 832,
+      "pattern": "/expiry/i",
+      "text": "where += \" AND b.status='ACTIVE' AND b.quantity > 0 AND (b.expiryDate IS NULL OR b.expiryDate > @nearCutoff)\";"
+    },
+    {
+      "file": "server/api.js",
+      "line": 847,
+      "pattern": "/expiry/i",
+      "text": "ORDER BY b.expiryDate ASC NULLS LAST, b.createdAt ASC"
+    },
+    {
+      "file": "server/api.js",
+      "line": 852,
+      "pattern": "/expiry/i",
+      "text": "const statsExpired = db.prepare(\"SELECT COUNT(*) as c FROM \\\"Batch\\\" WHERE tenantId=@tenantId AND (status='EXPIRED' OR (expiryDate IS NOT NULL AND expiryDate < @todayIso))\").get({ tenantId: 'default', todayIso }).c;"
+    },
+    {
+      "file": "server/api.js",
+      "line": 853,
+      "pattern": "/expiry/i",
+      "text": "const statsNear = db.prepare(\"SELECT COUNT(*) as c FROM \\\"Batch\\\" WHERE tenantId=@tenantId AND status='ACTIVE' AND quantity > 0 AND expiryDate >= @todayIso AND expiryDate <= @nearCutoff\").get({ tenantId: 'default', todayIso, nearCutoff }).c;"
+    },
+    {
+      "file": "server/api.js",
+      "line": 854,
+      "pattern": "/expiry/i",
+      "text": "const statsValid = db.prepare(\"SELECT COUNT(*) as c FROM \\\"Batch\\\" WHERE tenantId=@tenantId AND status='ACTIVE' AND quantity > 0 AND (expiryDate IS NULL OR expiryDate > @nearCutoff)\").get({ tenantId: 'default', nearCutoff }).c;"
+    },
+    {
+      "file": "server/api.js",
+      "line": 857,
+      "pattern": "/days[-_]?left/i",
+      "text": "let daysLeft = null;"
+    },
+    {
+      "file": "server/api.js",
+      "line": 858,
+      "pattern": "/expiry/i",
+      "text": "if (b.expiryDate) {"
+    },
+    {
+      "file": "server/api.js",
+      "line": 859,
+      "pattern": "/expiry/i",
+      "text": "const exp = new Date(b.expiryDate);"
+    },
+    {
+      "file": "server/api.js",
+      "line": 860,
+      "pattern": "/days[-_]?left/i",
+      "text": "daysLeft = Math.round((new Date(exp.getFullYear(), exp.getMonth(), exp.getDate()).getTime() - today.getTime()) / 86400000);"
+    },
+    {
+      "file": "server/api.js",
+      "line": 868,
+      "pattern": "/expiry/i",
+      "text": "expiryDate: b.expiryDate ? (typeof b.expiryDate === 'string' ? b.expiryDate : new Date(b.expiryDate).toISOString()) : null,"
+    },
+    {
+      "file": "server/api.js",
+      "line": 869,
+      "pattern": "/days[-_]?left/i",
+      "text": "daysLeft,"
+    },
+    {
+      "file": "server/api.js",
+      "line": 885,
+      "pattern": "/expired/i",
+      "text": "stats: { expired: statsExpired, near: statsNear, valid: statsValid },"
+    },
+    {
+      "file": "server/api.js",
+      "line": 922,
+      "pattern": "/expiry/i",
+      "text": "const newStatus = counted === 0 && adjType === 'EXPIRY_WRITEOFF' ? 'EXPIRED' : counted === 0 ? 'DEPLETED' : batch.status === 'DEPLETED' ? 'ACTIVE' : batch.status;"
+    },
+    {
+      "file": "server/api.js",
+      "line": 933,
+      "pattern": "/expiry/i",
+      "text": "router.post('/inventory/expiry/sweep', (req, res) => {"
+    },
+    {
+      "file": "server/api.js",
+      "line": 937,
+      "pattern": "/expiry/i",
+      "text": "const result = db.prepare(\"UPDATE \\\"Batch\\\" SET status='EXPIRED',updatedAt=@t WHERE tenantId=@tenantId AND status='ACTIVE' AND expiryDate IS NOT NULL AND date(expiryDate) < date('now')\").run({ t: now(), tenantId: 'default' });"
+    },
+    {
+      "file": "server/api.js",
+      "line": 978,
+      "pattern": "/expiry/i",
+      "text": "const products = db.prepare('SELECT p.id, p.nameAr, b.id as batchId, b.batchNo, b.quantity, b.expiryDate FROM \"Product\" p LEFT JOIN \"Batch\" b ON p.id=b.productId AND b.quantity>0 AND b.tenantId=@tenantId WHERE p.tenantId=@tenantId AND p.active=1 ORDER BY p.nameAr ASC').all({ tenantId: 'default' });"
+    },
+    {
+      "file": "server/api.js",
+      "line": 982,
+      "pattern": "/expiry/i",
+      "text": "if (row.batchId) { byProduct[row.id].systemQty = r3(byProduct[row.id].systemQty + row.quantity); byProduct[row.id].batches.push({ id: row.batchId, batchNo: row.batchNo, qty: row.quantity, expiryDate: row.expiryDate }); }"
+    },
+    {
+      "file": "server/api.js",
+      "line": 1009,
+      "pattern": "/expiry/i",
+      "text": "const bRows = db.prepare(`SELECT * FROM \"Batch\" WHERE productId IN (${productIds.map((_, i) => `@p${i}`).join(',')}) AND tenantId=@tenantId AND quantity > 0 ORDER BY expiryDate ASC NULLS LAST, createdAt ASC`)"
+    },
+    {
+      "file": "server/api.js",
+      "line": 1017,
+      "pattern": "/expiry/i",
+      "text": "expiryDate: b.expiryDate ? (typeof b.expiryDate === 'string' ? b.expiryDate : new Date(b.expiryDate).toISOString()) : null,"
+    },
+    {
+      "file": "server/api.js",
+      "line": 1062,
+      "pattern": "/expiry/i",
+      "text": "const batches = db.prepare('SELECT * FROM \"Batch\" WHERE productId=@productId AND tenantId=@tenantId AND quantity>0 ORDER BY expiryDate ASC NULLS LAST, createdAt ASC').all({ productId: line.productId, tenantId: 'default' });"
+    },
+    {
+      "file": "server/api.js",
+      "line": 1210,
+      "pattern": "/expiry/i",
+      "text": "expiry: item.expiryDate ? (typeof item.expiryDate === 'string' ? item.expiryDate : new Date(item.expiryDate).toISOString()) : null,"
+    },
+    {
+      "file": "server/api.js",
+      "line": 1298,
+      "pattern": "/\\bFEFO\\b/i",
+      "text": "// FEFO allocation"
+    },
+    {
+      "file": "server/api.js",
+      "line": 1299,
+      "pattern": "/expiry/i",
+      "text": "const batches = db.prepare(`SELECT * FROM \"Batch\" WHERE productId=@productId AND tenantId=@tenantId AND status='ACTIVE' AND quantity>0 AND (expiryDate IS NULL OR date(expiryDate)>=date(@today)) ORDER BY expiryDate ASC NULLS LAST, createdAt ASC`).all({ productId: item.productId, tenantId: 'default', today });"
+    },
+    {
+      "file": "server/api.js",
+      "line": 1306,
+      "pattern": "/expiry/i",
+      "text": "allocations.push({ batchId: batch.id, batchNo: batch.batchNo, expiryDate: batch.expiryDate, qty: take, costPrice: batch.costPrice });"
+    },
+    {
+      "file": "server/api.js",
+      "line": 1360,
+      "pattern": "/expiry/i",
+      "text": "db.prepare('INSERT INTO \"SaleItem\" (id,tenantId,saleId,productId,batchId,batchNo,expiryDate,productName,quantity,unitPrice,discount,total,costPrice) VALUES (@id,@tenantId,@saleId,@productId,@batchId,@batchNo,@expiryDate,@productName,@quantity,@unitPrice,@discount,@total,@costPrice)')"
+    },
+    {
+      "file": "server/api.js",
+      "line": 1361,
+      "pattern": "/expiry/i",
+      "text": ".run({ id: siId, tenantId: 'default', saleId, productId: line.productId, batchId: alloc.batchId, batchNo: alloc.batchNo, expiryDate: alloc.expiryDate, productName: line.productName, quantity: alloc.qty, unitPrice: line.unitPrice, discount: allocDiscount, total: allocTotal, costPrice: alloc.costPrice });"
+    },
+    {
+      "file": "server/api.js",
+      "line": 1421,
+      "pattern": "/expiry/i",
+      "text": "expiryDate: i.expiryDate ? (typeof i.expiryDate === 'string' ? i.expiryDate : new Date(i.expiryDate).toISOString()) : null,"
+    },
+    {
+      "file": "server/api.js",
+      "line": 1523,
+      "pattern": "/expiry/i",
+      "text": "db.prepare('INSERT INTO \"PurchaseItem\" (id,tenantId,purchaseId,productId,batchNo,expiryDate,quantity,unitCost,total) VALUES (@id,@tenantId,@purchaseId,@productId,@batchNo,@expiryDate,@quantity,@unitCost,@total)')"
+    },
+    {
+      "file": "server/api.js",
+      "line": 1524,
+      "pattern": "/expiry/i",
+      "text": ".run({ id: newId(), tenantId: 'default', purchaseId, productId: v.item.productId, batchNo: v.item.batchNo || null, expiryDate: v.item.expiryDate || null, quantity: v.qty, unitCost: v.unitCost, total: r2(v.qty * v.unitCost) });"
+    },
+    {
+      "file": "server/api.js",
+      "line": 1557,
+      "pattern": "/expiry/i",
+      "text": "db.prepare('INSERT INTO \"Batch\" (id,tenantId,productId,batchNo,expiryDate,quantity,costPrice,sellPrice,supplierId,purchaseId,status,updatedAt) VALUES (@id,@tenantId,@productId,@batchNo,@expiryDate,@quantity,@costPrice,@sellPrice,@supplierId,@purchaseId,\\'ACTIVE\\',@t)')"
+    },
+    {
+      "file": "server/api.js",
+      "line": 1558,
+      "pattern": "/expiry/i",
+      "text": ".run({ id: batchId, tenantId, productId: item.productId, batchNo, expiryDate: item.expiryDate || null, quantity: item.quantity, costPrice: item.unitCost, sellPrice: product.sellingPrice, supplierId: purchase.supplierId, purchaseId, t: now() });"
+    },
+    {
+      "file": "server/api.js",
+      "line": 1590,
+      "pattern": "/expiry/i",
+      "text": "expiryDate: i.expiryDate ? (typeof i.expiryDate === 'string' ? i.expiryDate : new Date(i.expiryDate).toISOString()) : null,"
+    },
+    {
+      "file": "server/api.js",
+      "line": 1680,
+      "pattern": "/expiry/i",
+      "text": "expiryDate: i.expiryDate ? (typeof i.expiryDate === 'string' ? i.expiryDate : new Date(i.expiryDate).toISOString()) : null,"
+    },
+    {
+      "file": "server/api.js",
+      "line": 1834,
+      "pattern": "/expiry/i",
+      "text": "'purchases', 'suppliers', 'inventory', 'low-stock', 'expiry', 'returns', 'movements'"
+    },
+    {
+      "file": "server/api.js",
+      "line": 1836,
+      "pattern": "/expiry/i",
+      "text": "const SNAPSHOT_TYPES = ['inventory', 'low-stock', 'expiry'];"
+    },
+    {
+      "file": "server/api.js",
+      "line": 1841,
+      "pattern": "/expiry/i",
+      "text": "const CSV_EXPIRY_STATE = { EXPIRED: 'منتهي الصلاحية', NEAR: 'قريب الانتهاء', VALID: 'ساري' };"
+    },
+    {
+      "file": "server/api.js",
+      "line": 1849,
+      "pattern": "/expiry/i",
+      "text": "EXPIRY_WRITEOFF: 'إعدام صلاحية',"
+    },
+    {
+      "file": "server/api.js",
+      "line": 1901,
+      "pattern": "/expired/i",
+      "text": "{ header: 'منتهي الصلاحية', get: (r) => r.stockExpired },"
+    },
+    {
+      "file": "server/api.js",
+      "line": 1912,
+      "pattern": "/expiry/i",
+      "text": "expiry: ["
+    },
+    {
+      "file": "server/api.js",
+      "line": 1916,
+      "pattern": "/expiry/i",
+      "text": "{ header: 'تاريخ الانتهاء', get: (r) => (r.expiryDate || '').slice(0, 10) },"
+    },
+    {
+      "file": "server/api.js",
+      "line": 1920,
+      "pattern": "/expiry/i",
+      "text": "{ header: 'الحالة', get: (r) => CSV_EXPIRY_STATE[r.state] || r.state },"
+    },
+    {
+      "file": "server/api.js",
+      "line": 2085,
+      "pattern": "/expiry/i",
+      "text": "const batches = db.prepare(\"SELECT productId, quantity, costPrice, expiryDate, status FROM \\\"Batch\\\" WHERE tenantId=@tenantId AND quantity>0 AND status IN ('ACTIVE','EXPIRED')\").all({ tenantId: 'default' });"
+    },
+    {
+      "file": "server/api.js",
+      "line": 2096,
+      "pattern": "/expired/i",
+      "text": "let stockTotal = 0, stockAvailable = 0, stockExpired = 0, value = 0;"
+    },
+    {
+      "file": "server/api.js",
+      "line": 2101,
+      "pattern": "/expiry/i",
+      "text": "const exp = b.expiryDate ? new Date(b.expiryDate) : null;"
+    },
+    {
+      "file": "server/api.js",
+      "line": 2102,
+      "pattern": "/expired/i",
+      "text": "if (exp && exp < todayMid) stockExpired += b.quantity;"
+    },
+    {
+      "file": "server/api.js",
+      "line": 2111,
+      "pattern": "/expired/i",
+      "text": "stockExpired: r3(stockExpired),"
+    },
+    {
+      "file": "server/api.js",
+      "line": 2126,
+      "pattern": "/expiry/i",
+      "text": "const batches = db.prepare(\"SELECT productId, quantity FROM \\\"Batch\\\" WHERE tenantId=@tenantId AND quantity>0 AND status='ACTIVE' AND (expiryDate IS NULL OR expiryDate>=@todayIso)\").all({ tenantId: 'default', todayIso });"
+    },
+    {
+      "file": "server/api.js",
+      "line": 2144,
+      "pattern": "/expiry/i",
+      "text": "case 'expiry': {"
+    },
+    {
+      "file": "server/api.js",
+      "line": 2146,
+      "pattern": "/expiry/i",
+      "text": "const warningDays = (settings.pos && settings.pos.expiryWarningDays) || 30;"
+    },
+    {
+      "file": "server/api.js",
+      "line": 2151,
+      "pattern": "/expiry/i",
+      "text": "const batches = db.prepare(\"SELECT b.batchNo, b.expiryDate, b.quantity, b.costPrice, p.nameAr as productName, p.sku FROM \\\"Batch\\\" b JOIN \\\"Product\\\" p ON b.productId=p.id WHERE b.tenantId=@tenantId AND b.quantity>0 AND b.status IN ('ACTIVE','EXPIRED') AND b.expiryDate IS NOT NULL ORDER BY b.expiryDate ASC\").all({ tenantId: 'default' });"
+    },
+    {
+      "file": "server/api.js",
+      "line": 2154,
+      "pattern": "/expiry/i",
+      "text": "const exp = new Date(b.expiryDate);"
+    },
+    {
+      "file": "server/api.js",
+      "line": 2155,
+      "pattern": "/expired/i",
+      "text": "const state = exp < todayMid ? 'EXPIRED' : exp <= warningLimit ? 'NEAR' : 'VALID';"
+    },
+    {
+      "file": "server/api.js",
+      "line": 2160,
+      "pattern": "/expiry/i",
+      "text": "expiryDate: typeof b.expiryDate === 'string' ? b.expiryDate : exp.toISOString(),"
+    },
+    {
+      "file": "server/api.js",
+      "line": 2173,
+      "pattern": "/expired/i",
+      "text": "expiredCount: all.filter(r => r.state === 'EXPIRED').length,"
+    },
+    {
+      "file": "server/api.js",
+      "line": 2175,
+      "pattern": "/expired/i",
+      "text": "expiredValue: r2(all.filter(r => r.state === 'EXPIRED').reduce((s, r) => s + r.value, 0)),"
+    },
+    {
+      "file": "server/api.js",
+      "line": 2264,
+      "pattern": "/expiry/i",
+      "text": "const warningDays = (settings.pos && settings.pos.expiryWarningDays) || 30;"
+    },
+    {
+      "file": "server/api.js",
+      "line": 2269,
+      "pattern": "/expiry/i",
+      "text": "const batches = db.prepare(\"SELECT productId, quantity, costPrice, expiryDate, status FROM \\\"Batch\\\" WHERE tenantId=@tenantId AND quantity>0 AND status IN ('ACTIVE','EXPIRED')\").all({ tenantId: 'default' });"
+    },
+    {
+      "file": "server/api.js",
+      "line": 2272,
+      "pattern": "/expiry/i",
+      "text": "let nearExpiryCount = 0;"
+    },
+    {
+      "file": "server/api.js",
+      "line": 2273,
+      "pattern": "/expired/i",
+      "text": "let expiredCount = 0;"
+    },
+    {
+      "file": "server/api.js",
+      "line": 2278,
+      "pattern": "/expiry/i",
+      "text": "if (b.expiryDate) {"
+    },
+    {
+      "file": "server/api.js",
+      "line": 2279,
+      "pattern": "/expiry/i",
+      "text": "const expTime = new Date(b.expiryDate).getTime();"
+    },
+    {
+      "file": "server/api.js",
+      "line": 2281,
+      "pattern": "/expired/i",
+      "text": "expiredCount++;"
+    },
+    {
+      "file": "server/api.js",
+      "line": 2283,
+      "pattern": "/expiry/i",
+      "text": "nearExpiryCount++;"
+    },
+    {
+      "file": "server/api.js",
+      "line": 2341,
+      "pattern": "/expiry/i",
+      "text": "nearExpiryCount,"
+    },
+    {
+      "file": "server/api.js",
+      "line": 2342,
+      "pattern": "/expired/i",
+      "text": "expiredCount,"
+    },
+    {
+      "file": "server/api.js",
+      "line": 2349,
+      "pattern": "/expiry/i",
+      "text": "inventory: { totalProducts: products.length, lowStockCount, expiringCount: nearExpiryCount },"
+    }
+  ],
+  "server/db.js": [
+    {
+      "file": "server/db.js",
+      "line": 147,
+      "pattern": "/expiry/i",
+      "text": "\"expiryDate\" DATETIME,"
+    },
+    {
+      "file": "server/db.js",
+      "line": 199,
+      "pattern": "/expiry/i",
+      "text": "\"expiryDate\" DATETIME,"
+    },
+    {
+      "file": "server/db.js",
+      "line": 235,
+      "pattern": "/expiry/i",
+      "text": "\"expiryDate\" DATETIME,"
+    },
+    {
+      "file": "server/db.js",
+      "line": 332,
+      "pattern": "/expiry/i",
+      "text": "`CREATE INDEX IF NOT EXISTS \"Batch_expiryDate_idx\" ON \"Batch\"(\"expiryDate\")`,"
+    },
+    {
+      "file": "server/db.js",
+      "line": 531,
+      "pattern": "/expiry/i",
+      "text": "AND (expiryDate IS NULL OR date(expiryDate)>=date(?))"
+    }
+  ],
+  "src/components/library/app.tsx": [
+    {
+      "file": "src/components/library/app.tsx",
+      "line": 245,
+      "pattern": "/expiry/i",
+      "text": "{/* Proactive operational alerts (low stock / near expiry) */}"
+    }
+  ],
+  "src/components/library/parts/alert-ticker.tsx": [
+    {
+      "file": "src/components/library/parts/alert-ticker.tsx",
+      "line": 8,
+      "pattern": "/expired/i",
+      "text": "// Slim, dismissible operational alert strip under the header: expired stock,"
+    },
+    {
+      "file": "src/components/library/parts/alert-ticker.tsx",
+      "line": 9,
+      "pattern": "/expiry/i",
+      "text": "// near-expiry batches and low-stock items — the numbers store staff must not miss."
+    },
+    {
+      "file": "src/components/library/parts/alert-ticker.tsx",
+      "line": 20,
+      "pattern": "/expiry/i",
+      "text": "nearExpiryCount: number"
+    },
+    {
+      "file": "src/components/library/parts/alert-ticker.tsx",
+      "line": 21,
+      "pattern": "/expired/i",
+      "text": "expiredCount: number"
+    },
+    {
+      "file": "src/components/library/parts/alert-ticker.tsx",
+      "line": 45,
+      "pattern": "/expiry/i",
+      "text": "if (alive) setData({ lowStockCount: d.lowStockCount, nearExpiryCount: d.nearExpiryCount, expiredCount: d.expiredCount })"
+    },
+    {
+      "file": "src/components/library/parts/alert-ticker.tsx",
+      "line": 60,
+      "pattern": "/expired/i",
+      "text": "const expired = data.expiredCount > 0"
+    },
+    {
+      "file": "src/components/library/parts/alert-ticker.tsx",
+      "line": 61,
+      "pattern": "/expiry/i",
+      "text": "const near = data.nearExpiryCount > 0"
+    },
+    {
+      "file": "src/components/library/parts/alert-ticker.tsx",
+      "line": 63,
+      "pattern": "/expired/i",
+      "text": "if (!expired && !near && !low) return null"
+    },
+    {
+      "file": "src/components/library/parts/alert-ticker.tsx",
+      "line": 65,
+      "pattern": "/expired/i",
+      "text": "const tone = expired"
+    },
+    {
+      "file": "src/components/library/parts/alert-ticker.tsx",
+      "line": 77,
+      "pattern": "/expired/i",
+      "text": "{expired && ("
+    },
+    {
+      "file": "src/components/library/parts/alert-ticker.tsx",
+      "line": 81,
+      "pattern": "/expired/i",
+      "text": "<span className=\"font-bold tabular-nums\">{data.expiredCount}</span> صنف منتهي الصلاحية في المخزن"
+    },
+    {
+      "file": "src/components/library/parts/alert-ticker.tsx",
+      "line": 89,
+      "pattern": "/expiry/i",
+      "text": "<span className=\"font-bold tabular-nums\">{data.nearExpiryCount}</span> باتش قريب من انتهاء الصلاحية"
+    }
+  ],
+  "src/components/library/parts/kit.tsx": [
+    {
+      "file": "src/components/library/parts/kit.tsx",
+      "line": 248,
+      "pattern": "/expired/i",
+      "text": "EXPIRED: 'bg-[var(--danger)]/12 text-[var(--danger)] border-[var(--danger)]/25',"
+    }
+  ],
+  "src/components/library/parts/labels.ts": [
+    {
+      "file": "src/components/library/parts/labels.ts",
+      "line": 55,
+      "pattern": "/expiry/i",
+      "text": "EXPIRY_WRITEOFF: ['إعدام صلاحية', 'Expiry write-off'],"
+    },
+    {
+      "file": "src/components/library/parts/labels.ts",
+      "line": 76,
+      "pattern": "/expiry/i",
+      "text": "export function expiryState(expiry: string | Date | null, warningDays: number): 'EXPIRED' | 'NEAR' | 'VALID' {"
+    },
+    {
+      "file": "src/components/library/parts/labels.ts",
+      "line": 77,
+      "pattern": "/expiry/i",
+      "text": "if (!expiry) return 'VALID'"
+    },
+    {
+      "file": "src/components/library/parts/labels.ts",
+      "line": 78,
+      "pattern": "/expiry/i",
+      "text": "const d = typeof expiry === 'string' ? new Date(expiry) : expiry"
+    },
+    {
+      "file": "src/components/library/parts/labels.ts",
+      "line": 82,
+      "pattern": "/expired/i",
+      "text": "if (exp < today) return 'EXPIRED'"
+    },
+    {
+      "file": "src/components/library/parts/labels.ts",
+      "line": 88,
+      "pattern": "/expired/i",
+      "text": "if (days < 0) return lang === 'ar' ? `منتهي منذ ${Math.abs(days)} يوم` : `expired ${Math.abs(days)}d ago`"
+    }
+  ],
+  "src/components/library/screens/dashboard.tsx": [
+    {
+      "file": "src/components/library/screens/dashboard.tsx",
+      "line": 201,
+      "pattern": "/expiry/i",
+      "text": "{/* expiry alert strip */}"
+    },
+    {
+      "file": "src/components/library/screens/dashboard.tsx",
+      "line": 203,
+      "pattern": "/expiry/i",
+      "text": "<StatCard label={t('dash.nearExpiry')} value={data.nearExpiryCount} icon={<Timer className=\"h-5 w-5\" />} tone={data.nearExpiryCount > 0 ? 'warning' : 'default'} onClick={() => setView('inventory')} />"
+    },
+    {
+      "file": "src/components/library/screens/dashboard.tsx",
+      "line": 204,
+      "pattern": "/expired/i",
+      "text": "<StatCard label={t('dash.expired')} value={data.expiredCount} icon={<CalendarX className=\"h-5 w-5\" />} tone={data.expiredCount > 0 ? 'danger' : 'success'} onClick={() => setView('inventory')} />"
+    }
+  ],
+  "src/components/library/screens/diagnostics.tsx": [
+    {
+      "file": "src/components/library/screens/diagnostics.tsx",
+      "line": 96,
+      "pattern": "/expired/i",
+      "text": "EXPIRED: 'منتهي',"
+    },
+    {
+      "file": "src/components/library/screens/diagnostics.tsx",
+      "line": 100,
+      "pattern": "/expired/i",
+      "text": "OFFLINE_GRACE_EXPIRED: 'انتهت مهلة السماح',"
+    }
+  ],
+  "src/components/library/screens/inventory.tsx": [
+    {
+      "file": "src/components/library/screens/inventory.tsx",
+      "line": 8,
+      "pattern": "/expiry/i",
+      "text": "// Tab 1: current stock overview · Tab 2: batches & expiry management · Tab 3: movement ledger"
+    },
+    {
+      "file": "src/components/library/screens/inventory.tsx",
+      "line": 13,
+      "pattern": "/expiry/i",
+      "text": "import { movementTypeLabel, expiryState, daysLabel } from '../parts/labels'"
+    },
+    {
+      "file": "src/components/library/screens/inventory.tsx",
+      "line": 64,
+      "pattern": "/expired/i",
+      "text": "stockExpired: number"
+    },
+    {
+      "file": "src/components/library/screens/inventory.tsx",
+      "line": 67,
+      "pattern": "/expiry/i",
+      "text": "nearestExpiry: string | null"
+    },
+    {
+      "file": "src/components/library/screens/inventory.tsx",
+      "line": 77,
+      "pattern": "/expiry/i",
+      "text": "expiryDate: string | null"
+    },
+    {
+      "file": "src/components/library/screens/inventory.tsx",
+      "line": 78,
+      "pattern": "/days[-_]?left/i",
+      "text": "daysLeft: number | null"
+    },
+    {
+      "file": "src/components/library/screens/inventory.tsx",
+      "line": 115,
+      "pattern": "/expiry/i",
+      "text": "'EXPIRY_WRITEOFF',"
+    },
+    {
+      "file": "src/components/library/screens/inventory.tsx",
+      "line": 120,
+      "pattern": "/expiry/i",
+      "text": "const EXPIRY_COLORS: Record<string, string> = {"
+    },
+    {
+      "file": "src/components/library/screens/inventory.tsx",
+      "line": 121,
+      "pattern": "/expired/i",
+      "text": "EXPIRED: 'text-[var(--danger)]',"
+    },
+    {
+      "file": "src/components/library/screens/inventory.tsx",
+      "line": 168,
+      "pattern": "/expiry/i",
+      "text": "const warningDays = status?.pos?.expiryWarningDays ?? 90"
+    },
+    {
+      "file": "src/components/library/screens/inventory.tsx",
+      "line": 177,
+      "pattern": "/\\bFEFO\\b/i",
+      "text": "description={t('inv.fefo')}"
+    },
+    {
+      "file": "src/components/library/screens/inventory.tsx",
+      "line": 189,
+      "pattern": "/صلاحية/",
+      "text": "الباتشات والصلاحية"
+    },
+    {
+      "file": "src/components/library/screens/inventory.tsx",
+      "line": 342,
+      "pattern": "/expired/i",
+      "text": "key: 'stockExpired',"
+    },
+    {
+      "file": "src/components/library/screens/inventory.tsx",
+      "line": 343,
+      "pattern": "/expired/i",
+      "text": "header: t('inv.expired'),"
+    },
+    {
+      "file": "src/components/library/screens/inventory.tsx",
+      "line": 345,
+      "pattern": "/expired/i",
+      "text": "r.stockExpired > 0 ? ("
+    },
+    {
+      "file": "src/components/library/screens/inventory.tsx",
+      "line": 347,
+      "pattern": "/expired/i",
+      "text": "{r.stockExpired}"
+    },
+    {
+      "file": "src/components/library/screens/inventory.tsx",
+      "line": 366,
+      "pattern": "/expiry/i",
+      "text": "key: 'nearestExpiry',"
+    },
+    {
+      "file": "src/components/library/screens/inventory.tsx",
+      "line": 367,
+      "pattern": "/expiry/i",
+      "text": "header: t('inv.expiryDate'),"
+    },
+    {
+      "file": "src/components/library/screens/inventory.tsx",
+      "line": 369,
+      "pattern": "/expiry/i",
+      "text": "if (!r.nearestExpiry) return <span className=\"text-muted-foreground\">—</span>"
+    },
+    {
+      "file": "src/components/library/screens/inventory.tsx",
+      "line": 370,
+      "pattern": "/expiry/i",
+      "text": "const state = expiryState(r.nearestExpiry, warningDays)"
+    },
+    {
+      "file": "src/components/library/screens/inventory.tsx",
+      "line": 372,
+      "pattern": "/expiry/i",
+      "text": "<div className={cn('whitespace-nowrap text-xs', EXPIRY_COLORS[state])}>"
+    },
+    {
+      "file": "src/components/library/screens/inventory.tsx",
+      "line": 373,
+      "pattern": "/expiry/i",
+      "text": "<p>{fmtDate(r.nearestExpiry)}</p>"
+    },
+    {
+      "file": "src/components/library/screens/inventory.tsx",
+      "line": 374,
+      "pattern": "/expiry/i",
+      "text": "<p className=\"text-[10px]\">{daysLabel(daysUntil(r.nearestExpiry), 'ar')}</p>"
+    },
+    {
+      "file": "src/components/library/screens/inventory.tsx",
+      "line": 418,
+      "pattern": "/expired/i",
+      "text": "<Chip active={filter === 'expired'} tone=\"danger\" onClick={() => setFilter(filter === 'expired' ? '' : 'expired')}>"
+    },
+    {
+      "file": "src/components/library/screens/inventory.tsx",
+      "line": 420,
+      "pattern": "/expired/i",
+      "text": "{t('inv.expired')}"
+    },
+    {
+      "file": "src/components/library/screens/inventory.tsx",
+      "line": 424,
+      "pattern": "/expiry/i",
+      "text": "{t('inv.nearExpiry')}"
+    },
+    {
+      "file": "src/components/library/screens/inventory.tsx",
+      "line": 468,
+      "pattern": "/expiry/i",
+      "text": "<th className=\"px-3 py-2 text-start font-medium\">{t('inv.expiryDate')}</th>"
+    },
+    {
+      "file": "src/components/library/screens/inventory.tsx",
+      "line": 477,
+      "pattern": "/expiry/i",
+      "text": "const state = expiryState(b.expiryDate, warningDays)"
+    },
+    {
+      "file": "src/components/library/screens/inventory.tsx",
+      "line": 483,
+      "pattern": "/expiry/i",
+      "text": "<td className={cn('whitespace-nowrap px-3 py-2 text-xs', EXPIRY_COLORS[state])}>"
+    },
+    {
+      "file": "src/components/library/screens/inventory.tsx",
+      "line": 484,
+      "pattern": "/expiry/i",
+      "text": "{b.expiryDate ? ("
+    },
+    {
+      "file": "src/components/library/screens/inventory.tsx",
+      "line": 486,
+      "pattern": "/expiry/i",
+      "text": "<p>{fmtDate(b.expiryDate)}</p>"
+    },
+    {
+      "file": "src/components/library/screens/inventory.tsx",
+      "line": 487,
+      "pattern": "/days[-_]?left/i",
+      "text": "{b.daysLeft !== null && <p className=\"text-[10px]\">{daysLabel(b.daysLeft, 'ar')}</p>}"
+    },
+    {
+      "file": "src/components/library/screens/inventory.tsx",
+      "line": 522,
+      "pattern": "/expiry/i",
+      "text": "// Tab 2 — batches & expiry management"
+    },
+    {
+      "file": "src/components/library/screens/inventory.tsx",
+      "line": 538,
+      "pattern": "/expired/i",
+      "text": "const [stats, setStats] = useState<{ expired: number; near: number; valid: number }>({ expired: 0, near: 0, valid: 0 })"
+    },
+    {
+      "file": "src/components/library/screens/inventory.tsx",
+      "line": 566,
+      "pattern": "/expired/i",
+      "text": "const res = await api<Paged<BatchRow> & { stats: { expired: number; near: number; valid: number } }>("
+    },
+    {
+      "file": "src/components/library/screens/inventory.tsx",
+      "line": 584,
+      "pattern": "/\\bsweep\\b/i",
+      "text": "async function sweep() {"
+    },
+    {
+      "file": "src/components/library/screens/inventory.tsx",
+      "line": 587,
+      "pattern": "/expiry/i",
+      "text": "const res = await api<{ updated: number }>('/inventory/expiry/sweep', { method: 'POST' })"
+    },
+    {
+      "file": "src/components/library/screens/inventory.tsx",
+      "line": 590,
+      "pattern": "/منتهي/",
+      "text": "description: res.updated > 0 ? `تم تحويل ${res.updated} باتش إلى حالة \"منتهي الصلاحية\"` : 'لا توجد باتشات جديدة لتغيير حالتها',"
+    },
+    {
+      "file": "src/components/library/screens/inventory.tsx",
+      "line": 623,
+      "pattern": "/expiry/i",
+      "text": "key: 'expiryDate',"
+    },
+    {
+      "file": "src/components/library/screens/inventory.tsx",
+      "line": 624,
+      "pattern": "/expiry/i",
+      "text": "header: t('inv.expiryDate'),"
+    },
+    {
+      "file": "src/components/library/screens/inventory.tsx",
+      "line": 626,
+      "pattern": "/expiry/i",
+      "text": "if (!r.expiryDate || r.daysLeft === null) return <span className=\"text-muted-foreground\">بدون تاريخ</span>"
+    },
+    {
+      "file": "src/components/library/screens/inventory.tsx",
+      "line": 627,
+      "pattern": "/expiry/i",
+      "text": "const state = expiryState(r.expiryDate, warningDays)"
+    },
+    {
+      "file": "src/components/library/screens/inventory.tsx",
+      "line": 629,
+      "pattern": "/expiry/i",
+      "text": "<div className={cn('whitespace-nowrap', EXPIRY_COLORS[state])}>"
+    },
+    {
+      "file": "src/components/library/screens/inventory.tsx",
+      "line": 630,
+      "pattern": "/expiry/i",
+      "text": "<p className=\"text-xs font-medium\">{fmtDate(r.expiryDate)}</p>"
+    },
+    {
+      "file": "src/components/library/screens/inventory.tsx",
+      "line": 631,
+      "pattern": "/days[-_]?left/i",
+      "text": "<p className=\"text-[10px]\">{daysLabel(r.daysLeft, 'ar')}</p>"
+    },
+    {
+      "file": "src/components/library/screens/inventory.tsx",
+      "line": 686,
+      "pattern": "/expired/i",
+      "text": "<SummaryStat label={t('inv.expired')} value={stats.expired} tone=\"danger\" icon={<CalendarX className=\"h-4 w-4\" />} />"
+    },
+    {
+      "file": "src/components/library/screens/inventory.tsx",
+      "line": 687,
+      "pattern": "/expiry/i",
+      "text": "<SummaryStat label={t('inv.nearExpiry')} value={stats.near} tone=\"warning\" icon={<Timer className=\"h-4 w-4\" />} />"
+    },
+    {
+      "file": "src/components/library/screens/inventory.tsx",
+      "line": 704,
+      "pattern": "/expired/i",
+      "text": "<Chip active={filter === 'expired'} tone=\"danger\" onClick={() => setFilter(filter === 'expired' ? '' : 'expired')}>"
+    },
+    {
+      "file": "src/components/library/screens/inventory.tsx",
+      "line": 705,
+      "pattern": "/expired/i",
+      "text": "{t('inv.expired')}"
+    },
+    {
+      "file": "src/components/library/screens/inventory.tsx",
+      "line": 708,
+      "pattern": "/expiry/i",
+      "text": "{t('inv.nearExpiry')}"
+    },
+    {
+      "file": "src/components/library/screens/inventory.tsx",
+      "line": 717,
+      "pattern": "/\\bsweep\\b/i",
+      "text": "<Button variant=\"outline\" size=\"sm\" className=\"h-9\" disabled={sweeping} onClick={() => void sweep()}>"
+    },
+    {
+      "file": "src/components/library/screens/inventory.tsx",
+      "line": 719,
+      "pattern": "/\\bsweep\\b/i",
+      "text": "{t('inv.sweep')}"
+    },
+    {
+      "file": "src/components/library/screens/inventory.tsx",
+      "line": 1024,
+      "pattern": "/expiry/i",
+      "text": "{t('inv.expiryDate')}: {batch.expiryDate ? fmtDate(batch.expiryDate) : '—'}"
+    },
+    {
+      "file": "src/components/library/screens/inventory.tsx",
+      "line": 1061,
+      "pattern": "/expiry/i",
+      "text": "<SelectItem value=\"EXPIRY_WRITEOFF\">{movementTypeLabel('EXPIRY_WRITEOFF', lang)}</SelectItem>"
+    }
+  ],
+  "src/components/library/screens/pos.tsx": [
+    {
+      "file": "src/components/library/screens/pos.tsx",
+      "line": 9,
+      "pattern": "/\\bFEFO\\b/i",
+      "text": "// FEFO batch allocation server-side, suspend/resume carts, thermal receipt."
+    },
+    {
+      "file": "src/components/library/screens/pos.tsx",
+      "line": 87,
+      "pattern": "/expired/i",
+      "text": "expiredSoon?: boolean"
+    },
+    {
+      "file": "src/components/library/screens/pos.tsx",
+      "line": 88,
+      "pattern": "/expired/i",
+      "text": "hasExpiredStock?: boolean"
+    },
+    {
+      "file": "src/components/library/screens/pos.tsx",
+      "line": 89,
+      "pattern": "/expiry/i",
+      "text": "nearestExpiry?: string | null"
+    },
+    {
+      "file": "src/components/library/screens/pos.tsx",
+      "line": 174,
+      "pattern": "/expiry/i",
+      "text": "const warningDays = pos?.expiryWarningDays ?? 90"
+    },
+    {
+      "file": "src/components/library/screens/pos.tsx",
+      "line": 435,
+      "pattern": "/expired/i",
+      "text": "title: p.hasExpiredStock ? 'صنف منتهي الصلاحية' : 'غير متاح للبيع',"
+    },
+    {
+      "file": "src/components/library/screens/pos.tsx",
+      "line": 437,
+      "pattern": "/expired/i",
+      "text": "p.hasExpiredStock && p.stockAvailable <= 0"
+    },
+    {
+      "file": "src/components/library/screens/pos.tsx",
+      "line": 438,
+      "pattern": "/منتهي/",
+      "text": "? `${p.nameAr}: كل الرصيد المتاح منتهي الصلاحية ولا يمكن بيعه`"
+    },
+    {
+      "file": "src/components/library/screens/pos.tsx",
+      "line": 454,
+      "pattern": "/expired/i",
+      "text": "expiredSoon: !!p.expiredSoon,"
+    },
+    {
+      "file": "src/components/library/screens/pos.tsx",
+      "line": 473,
+      "pattern": "/expiry/i",
+      "text": "api<{ product: PosProduct; stockAvailable: number; batches: { expiryDate: string | null; quantity: number; status: string }[] }>("
+    },
+    {
+      "file": "src/components/library/screens/pos.tsx",
+      "line": 479,
+      "pattern": "/expiry/i",
+      "text": "// derive expiry flags from the detail batches (list route computes these too)"
+    },
+    {
+      "file": "src/components/library/screens/pos.tsx",
+      "line": 482,
+      "pattern": "/expired/i",
+      "text": "const hasExpiredStock = (res.batches ?? []).some("
+    },
+    {
+      "file": "src/components/library/screens/pos.tsx",
+      "line": 483,
+      "pattern": "/expiry/i",
+      "text": "(b) => b.quantity > 0 && b.status === 'EXPIRED' || (b.expiryDate && new Date(b.expiryDate) < today && b.quantity > 0)"
+    },
+    {
+      "file": "src/components/library/screens/pos.tsx",
+      "line": 486,
+      "pattern": "/expiry/i",
+      "text": ".filter((b) => b.quantity > 0 && b.expiryDate && new Date(b.expiryDate) >= today)"
+    },
+    {
+      "file": "src/components/library/screens/pos.tsx",
+      "line": 487,
+      "pattern": "/expiry/i",
+      "text": ".map((b) => new Date(b.expiryDate as string).getTime())"
+    },
+    {
+      "file": "src/components/library/screens/pos.tsx",
+      "line": 489,
+      "pattern": "/expired/i",
+      "text": "const expiredSoon = nearest != null && nearest - today.getTime() <= (warningDays * 86400000)"
+    },
+    {
+      "file": "src/components/library/screens/pos.tsx",
+      "line": 493,
+      "pattern": "/expired/i",
+      "text": "hasExpiredStock,"
+    },
+    {
+      "file": "src/components/library/screens/pos.tsx",
+      "line": 494,
+      "pattern": "/expired/i",
+      "text": "expiredSoon: !!expiredSoon,"
+    },
+    {
+      "file": "src/components/library/screens/pos.tsx",
+      "line": 777,
+      "pattern": "/expired/i",
+      "text": "expiredSoon: !!l.expiredSoon,"
+    },
+    {
+      "file": "src/components/library/screens/pos.tsx",
+      "line": 1524,
+      "pattern": "/expiry/i",
+      "text": "const nearExpiry ="
+    },
+    {
+      "file": "src/components/library/screens/pos.tsx",
+      "line": 1525,
+      "pattern": "/expired/i",
+      "text": "!!product.expiredSoon ||"
+    },
+    {
+      "file": "src/components/library/screens/pos.tsx",
+      "line": 1526,
+      "pattern": "/expiry/i",
+      "text": "(!!product.nearestExpiry &&"
+    },
+    {
+      "file": "src/components/library/screens/pos.tsx",
+      "line": 1527,
+      "pattern": "/expiry/i",
+      "text": "new Date(product.nearestExpiry).getTime() - Date.now() <= warningDays * 86400000 &&"
+    },
+    {
+      "file": "src/components/library/screens/pos.tsx",
+      "line": 1528,
+      "pattern": "/expiry/i",
+      "text": "new Date(product.nearestExpiry).getTime() >= Date.now())"
+    },
+    {
+      "file": "src/components/library/screens/pos.tsx",
+      "line": 1578,
+      "pattern": "/expired/i",
+      "text": "{avail <= 0 && product.hasExpiredStock && ("
+    },
+    {
+      "file": "src/components/library/screens/pos.tsx",
+      "line": 1581,
+      "pattern": "/منتهي/",
+      "text": "منتهي"
+    },
+    {
+      "file": "src/components/library/screens/pos.tsx",
+      "line": 1584,
+      "pattern": "/expiry/i",
+      "text": "{nearExpiry && avail > 0 && ("
+    },
+    {
+      "file": "src/components/library/screens/pos.tsx",
+      "line": 1587,
+      "pattern": "/صلاحية/",
+      "text": "قاربت الصلاحية"
+    }
+  ],
+  "src/components/library/screens/products.tsx": [
+    {
+      "file": "src/components/library/screens/products.tsx",
+      "line": 23,
+      "pattern": "/expiry/i",
+      "text": "import { unitLabel, expiryState, daysLabel, movementTypeLabel } from '../parts/labels'"
+    },
+    {
+      "file": "src/components/library/screens/products.tsx",
+      "line": 105,
+      "pattern": "/expiry/i",
+      "text": "expiryDate: string | null"
+    },
+    {
+      "file": "src/components/library/screens/products.tsx",
+      "line": 167,
+      "pattern": "/expiry/i",
+      "text": "const warningDays = status?.pos?.expiryWarningDays ?? 90"
+    },
+    {
+      "file": "src/components/library/screens/products.tsx",
+      "line": 451,
+      "pattern": "/منتهي/",
+      "text": "<div className=\"flex flex-col\" title={`إجمالي الكميات (شامل المنتهي): ${formatQty(row.stockTotal, row.isWeighable)}`}>"
+    },
+    {
+      "file": "src/components/library/screens/products.tsx",
+      "line": 458,
+      "pattern": "/منتهي/",
+      "text": "+{formatQty(unavailable, row.isWeighable)} شامل المنتهي"
+    },
+    {
+      "file": "src/components/library/screens/products.tsx",
+      "line": 957,
+      "pattern": "/\\bFEFO\\b/i",
+      "text": "استلم الباتشات من فواتير الشراء — يتم إنشاؤها تلقائياً عند الاستلام ويُصرف المخزون بنظام FEFO."
+    },
+    {
+      "file": "src/components/library/screens/products.tsx",
+      "line": 964,
+      "pattern": "/تاريخ الانتهاء/",
+      "text": "<th className=\"px-3 py-2 text-start font-medium\">تاريخ الانتهاء</th>"
+    },
+    {
+      "file": "src/components/library/screens/products.tsx",
+      "line": 972,
+      "pattern": "/expiry/i",
+      "text": "const state = expiryState(b.expiryDate, warningDays)"
+    },
+    {
+      "file": "src/components/library/screens/products.tsx",
+      "line": 973,
+      "pattern": "/expiry/i",
+      "text": "const days = b.expiryDate ? daysUntil(b.expiryDate) : null"
+    },
+    {
+      "file": "src/components/library/screens/products.tsx",
+      "line": 983,
+      "pattern": "/expired/i",
+      "text": "label={state === 'EXPIRED' ? 'منتهي' : state === 'NEAR' ? 'قريب الانتهاء' : 'ساري'}"
+    },
+    {
+      "file": "src/components/library/screens/products.tsx",
+      "line": 985,
+      "pattern": "/expiry/i",
+      "text": "{b.expiryDate && ("
+    },
+    {
+      "file": "src/components/library/screens/products.tsx",
+      "line": 987,
+      "pattern": "/expiry/i",
+      "text": "{fmtDate(b.expiryDate)} · {daysLabel(days ?? 0, 'ar')}"
+    },
+    {
+      "file": "src/components/library/screens/products.tsx",
+      "line": 1045,
+      "pattern": "/منتهي/",
+      "text": "DEPLETED: 'منتهي الكمية',"
+    },
+    {
+      "file": "src/components/library/screens/products.tsx",
+      "line": 1047,
+      "pattern": "/expired/i",
+      "text": "EXPIRED: 'منتهي الصلاحية',"
+    }
+  ],
+  "src/components/library/screens/purchases.tsx": [
+    {
+      "file": "src/components/library/screens/purchases.tsx",
+      "line": 76,
+      "pattern": "/expiry/i",
+      "text": "expiryDate: string | null"
+    },
+    {
+      "file": "src/components/library/screens/purchases.tsx",
+      "line": 107,
+      "pattern": "/expiry/i",
+      "text": "expiryDate: string"
+    },
+    {
+      "file": "src/components/library/screens/purchases.tsx",
+      "line": 547,
+      "pattern": "/expiry/i",
+      "text": "expiryDate: '',"
+    },
+    {
+      "file": "src/components/library/screens/purchases.tsx",
+      "line": 583,
+      "pattern": "/expiry/i",
+      "text": "expiryDate: it.expiryDate || undefined,"
+    },
+    {
+      "file": "src/components/library/screens/purchases.tsx",
+      "line": 610,
+      "pattern": "/تاريخ الانتهاء/",
+      "text": "<DialogDescription>اختر المورد والأصناف — حدد رقم الباتش وتاريخ الانتهاء لكل صنف لتتبعه لاحقاً</DialogDescription>"
+    },
+    {
+      "file": "src/components/library/screens/purchases.tsx",
+      "line": 756,
+      "pattern": "/expiry/i",
+      "text": "{t('purchases.expiry')} <span className=\"text-muted-foreground/60\">({t('app.optional')})</span>"
+    },
+    {
+      "file": "src/components/library/screens/purchases.tsx",
+      "line": 762,
+      "pattern": "/expiry/i",
+      "text": "value={it.expiryDate}"
+    },
+    {
+      "file": "src/components/library/screens/purchases.tsx",
+      "line": 763,
+      "pattern": "/expiry/i",
+      "text": "onChange={(e) => updateItem(i, { expiryDate: e.target.value })}"
+    },
+    {
+      "file": "src/components/library/screens/purchases.tsx",
+      "line": 937,
+      "pattern": "/expiry/i",
+      "text": "<th className=\"px-3 py-2 text-start font-medium\">{t('purchases.expiry')}</th>"
+    },
+    {
+      "file": "src/components/library/screens/purchases.tsx",
+      "line": 962,
+      "pattern": "/expiry/i",
+      "text": "<td className=\"px-3 py-2 text-xs\">{it.expiryDate ? fmtDate(it.expiryDate) : '—'}</td>"
+    }
+  ],
+  "src/components/library/screens/reports.tsx": [
+    {
+      "file": "src/components/library/screens/reports.tsx",
+      "line": 73,
+      "pattern": "/expiry/i",
+      "text": "expiryFilter?: boolean"
+    },
+    {
+      "file": "src/components/library/screens/reports.tsx",
+      "line": 87,
+      "pattern": "/expiry/i",
+      "text": "{ id: 'expiry', ar: 'تقرير الصلاحية', en: 'Expiry Report', icon: CalendarClock, snapshot: true, expiryFilter: true },"
+    },
+    {
+      "file": "src/components/library/screens/reports.tsx",
+      "line": 122,
+      "pattern": "/expiry/i",
+      "text": "expiry: ["
+    },
+    {
+      "file": "src/components/library/screens/reports.tsx",
+      "line": 123,
+      "pattern": "/expired/i",
+      "text": "{ key: 'expiredCount', ar: 'دفعات منتهية', en: 'Expired batches', tone: 'danger' },"
+    },
+    {
+      "file": "src/components/library/screens/reports.tsx",
+      "line": 124,
+      "pattern": "/expiry/i",
+      "text": "{ key: 'nearCount', ar: 'دفعات قريبة الانتهاء', en: 'Near expiry', tone: 'warning' },"
+    },
+    {
+      "file": "src/components/library/screens/reports.tsx",
+      "line": 125,
+      "pattern": "/expired/i",
+      "text": "{ key: 'expiredValue', ar: 'قيمة المنتهية', en: 'Expired value', money: true },"
+    },
+    {
+      "file": "src/components/library/screens/reports.tsx",
+      "line": 126,
+      "pattern": "/expiry/i",
+      "text": "{ key: 'nearValue', ar: 'قيمة القريبة من الانتهاء', en: 'Near expiry value', money: true },"
+    },
+    {
+      "file": "src/components/library/screens/reports.tsx",
+      "line": 135,
+      "pattern": "/expiry/i",
+      "text": "const EXPIRY_STATE_LABEL: Record<string, [string, string]> = {"
+    },
+    {
+      "file": "src/components/library/screens/reports.tsx",
+      "line": 136,
+      "pattern": "/expired/i",
+      "text": "EXPIRED: ['منتهي الصلاحية', 'Expired'],"
+    },
+    {
+      "file": "src/components/library/screens/reports.tsx",
+      "line": 137,
+      "pattern": "/expiry/i",
+      "text": "NEAR: ['قريب الانتهاء', 'Near expiry'],"
+    },
+    {
+      "file": "src/components/library/screens/reports.tsx",
+      "line": 158,
+      "pattern": "/expiry/i",
+      "text": "const [expiryFilter, setExpiryFilter] = useState('all')"
+    },
+    {
+      "file": "src/components/library/screens/reports.tsx",
+      "line": 179,
+      "pattern": "/expiry/i",
+      "text": "if (def.expiryFilter && expiryFilter !== 'all') params.set('filter', expiryFilter)"
+    },
+    {
+      "file": "src/components/library/screens/reports.tsx",
+      "line": 195,
+      "pattern": "/expiry/i",
+      "text": "[type, from, to, q, expiryFilter, def]"
+    },
+    {
+      "file": "src/components/library/screens/reports.tsx",
+      "line": 210,
+      "pattern": "/expiry/i",
+      "text": "if (def.expiryFilter && expiryFilter !== 'all') params.set('filter', expiryFilter)"
+    },
+    {
+      "file": "src/components/library/screens/reports.tsx",
+      "line": 298,
+      "pattern": "/expired/i",
+      "text": "{ key: 'stockExpired', header: t('inv.expired'), render: (r) => <span className={Number(r.stockExpired) > 0 ? 'font-semibold text-[var(--danger)] tabular-nums' : 'tabular-nums'}>{Number(r.stockExpired ?? 0).toLocaleString('en-US')}</span> },"
+    },
+    {
+      "file": "src/components/library/screens/reports.tsx",
+      "line": 310,
+      "pattern": "/expiry/i",
+      "text": "case 'expiry':"
+    },
+    {
+      "file": "src/components/library/screens/reports.tsx",
+      "line": 315,
+      "pattern": "/expiry/i",
+      "text": "{ key: 'expiryDate', header: t('inv.expiryDate'), render: (r) => fmtDate(r.expiryDate as string) },"
+    },
+    {
+      "file": "src/components/library/screens/reports.tsx",
+      "line": 321,
+      "pattern": "/expiry/i",
+      "text": "const lbl = (EXPIRY_STATE_LABEL[st] ?? [st, st])[lang === 'ar' ? 0 : 1]"
+    },
+    {
+      "file": "src/components/library/screens/reports.tsx",
+      "line": 322,
+      "pattern": "/expired/i",
+      "text": "const tone = st === 'EXPIRED' ? 'border-[var(--danger)]/30 bg-[var(--danger)]/10 text-[var(--danger)]' : st === 'NEAR' ? 'border-[var(--warning)]/30 bg-[var(--warning)]/10 text-[var(--warning)]' : 'border-border bg-muted text-muted-foreground'"
+    },
+    {
+      "file": "src/components/library/screens/reports.tsx",
+      "line": 478,
+      "pattern": "/expiry/i",
+      "text": "{def.expiryFilter && ("
+    },
+    {
+      "file": "src/components/library/screens/reports.tsx",
+      "line": 481,
+      "pattern": "/expiry/i",
+      "text": "<Select value={expiryFilter} onValueChange={setExpiryFilter}>"
+    },
+    {
+      "file": "src/components/library/screens/reports.tsx",
+      "line": 487,
+      "pattern": "/expired/i",
+      "text": "<SelectItem value=\"expired\">{t('inv.expired')}</SelectItem>"
+    },
+    {
+      "file": "src/components/library/screens/reports.tsx",
+      "line": 488,
+      "pattern": "/expiry/i",
+      "text": "<SelectItem value=\"near\">{t('inv.nearExpiry')}</SelectItem>"
+    }
+  ],
+  "src/components/library/screens/returns.tsx": [
+    {
+      "file": "src/components/library/screens/returns.tsx",
+      "line": 39,
+      "pattern": "/expiry/i",
+      "text": "expiryDate: string | null"
+    },
+    {
+      "file": "src/components/library/screens/returns.tsx",
+      "line": 371,
+      "pattern": "/صلاحية/",
+      "text": "<th className=\"px-3 py-2 text-start font-medium\">الصلاحية</th>"
+    },
+    {
+      "file": "src/components/library/screens/returns.tsx",
+      "line": 391,
+      "pattern": "/expiry/i",
+      "text": "{i.expiryDate ? fmtDate(i.expiryDate) : '—'}"
+    },
+    {
+      "file": "src/components/library/screens/returns.tsx",
+      "line": 490,
+      "pattern": "/صلاحية/",
+      "text": "title=\"لا تملك صلاحية إنشاء المرتجعات\""
+    },
+    {
+      "file": "src/components/library/screens/returns.tsx",
+      "line": 491,
+      "pattern": "/صلاحية/",
+      "text": "hint=\"راجع مدير النظام لمنحك صلاحية SALES_RETURN\""
+    }
+  ],
+  "src/components/library/screens/roles.tsx": [
+    {
+      "file": "src/components/library/screens/roles.tsx",
+      "line": 165,
+      "pattern": "/صلاحية/",
+      "text": "description: L('أدخل مفتاح الدور واسمه بالعربية واختر صلاحية واحدة على الأقل', 'Enter role key, Arabic name and at least one permission'),"
+    }
+  ],
+  "src/components/library/screens/sales-history.tsx": [
+    {
+      "file": "src/components/library/screens/sales-history.tsx",
+      "line": 78,
+      "pattern": "/expiry/i",
+      "text": "expiryDate: string | null"
+    },
+    {
+      "file": "src/components/library/screens/sales-history.tsx",
+      "line": 531,
+      "pattern": "/صلاحية/",
+      "text": "<th className=\"px-3 py-2 text-start font-medium\">الصلاحية</th>"
+    },
+    {
+      "file": "src/components/library/screens/sales-history.tsx",
+      "line": 548,
+      "pattern": "/expiry/i",
+      "text": "{i.expiryDate ? fmtDate(i.expiryDate) : '—'}"
+    }
+  ],
+  "src/components/library/screens/settings.tsx": [
+    {
+      "file": "src/components/library/screens/settings.tsx",
+      "line": 181,
+      "pattern": "/صلاحية/",
+      "text": "const noPermHint = L('لا تملك صلاحية تعديل الإعدادات', 'No settings permission')"
+    },
+    {
+      "file": "src/components/library/screens/settings.tsx",
+      "line": 250,
+      "pattern": "/صلاحية/",
+      "text": "hint={!canHardware ? L('تعديل الأجهزة يتطلب صلاحية إدارة الأجهزة', 'Hardware manage permission required') : undefined}"
+    },
+    {
+      "file": "src/components/library/screens/settings.tsx",
+      "line": 261,
+      "pattern": "/صلاحية/",
+      "text": "hint={!canBackup ? L('يتطلب صلاحية إدارة النسخ الاحتياطية', 'Backup manage permission required') : undefined}"
+    },
+    {
+      "file": "src/components/library/screens/settings.tsx",
+      "line": 655,
+      "pattern": "/expiry/i",
+      "text": "description={L('العملة والخصومات والصلاحية وطرق الدفع', 'Currency, discounts, expiry and payment methods')}"
+    },
+    {
+      "file": "src/components/library/screens/settings.tsx",
+      "line": 690,
+      "pattern": "/expiry/i",
+      "text": "label={L('تنبيه قرب الانتهاء (أيام)', 'Expiry warning (days)')}"
+    },
+    {
+      "file": "src/components/library/screens/settings.tsx",
+      "line": 691,
+      "pattern": "/expiry/i",
+      "text": "value={p.expiryWarningDays}"
+    },
+    {
+      "file": "src/components/library/screens/settings.tsx",
+      "line": 694,
+      "pattern": "/expiry/i",
+      "text": "onChange={(v) => setPos({ expiryWarningDays: v })}"
+    },
+    {
+      "file": "src/components/library/screens/settings.tsx",
+      "line": 695,
+      "pattern": "/expiry/i",
+      "text": "hint={L('يُستخدم في تلوين الأصناف وتقرير الصلاحية', 'Drives item highlighting and the expiry report')}"
+    },
+    {
+      "file": "src/components/library/screens/settings.tsx",
+      "line": 712,
+      "pattern": "/expired/i",
+      "text": "{L('السماح ببيع الأصناف منتهية الصلاحية', 'Allow selling expired items')}"
+    },
+    {
+      "file": "src/components/library/screens/settings.tsx",
+      "line": 716,
+      "pattern": "/منتهي/",
+      "text": "'غير مستحسن — يسمح لنقطة البيع بخصم الكميات من دفعات منتهية الصلاحية رغم التحذير.',"
+    },
+    {
+      "file": "src/components/library/screens/settings.tsx",
+      "line": 717,
+      "pattern": "/expired/i",
+      "text": "'Not recommended — lets POS allocate from expired batches despite warnings.'"
+    },
+    {
+      "file": "src/components/library/screens/settings.tsx",
+      "line": 723,
+      "pattern": "/expired/i",
+      "text": "checked={p.allowSellingExpired}"
+    },
+    {
+      "file": "src/components/library/screens/settings.tsx",
+      "line": 724,
+      "pattern": "/expired/i",
+      "text": "onCheckedChange={(v) => setPos({ allowSellingExpired: v })}"
+    },
+    {
+      "file": "src/components/library/screens/settings.tsx",
+      "line": 725,
+      "pattern": "/expired/i",
+      "text": "aria-label={L('السماح ببيع المنتهي', 'Allow expired')}"
+    },
+    {
+      "file": "src/components/library/screens/settings.tsx",
+      "line": 1014,
+      "pattern": "/\\bsweep\\b/i",
+      "text": "async function sweep() {"
+    },
+    {
+      "file": "src/components/library/screens/settings.tsx",
+      "line": 1017,
+      "pattern": "/expiry/i",
+      "text": "const res = await api<{ updated?: number; swept?: number; count?: number }>('/inventory/expiry/sweep', {"
+    },
+    {
+      "file": "src/components/library/screens/settings.tsx",
+      "line": 1022,
+      "pattern": "/expiry/i",
+      "text": "title: L('تم تحديث حالات الصلاحية', 'Expiry sweep done'),"
+    },
+    {
+      "file": "src/components/library/screens/settings.tsx",
+      "line": 1025,
+      "pattern": "/expired/i",
+      "text": "? L(`تم تعليم ${n} دفعة كمنتهية الصلاحية`, `${n} batches marked expired`)"
+    },
+    {
+      "file": "src/components/library/screens/settings.tsx",
+      "line": 1029,
+      "pattern": "/\\bsweep\\b/i",
+      "text": "toast({ variant: 'destructive', title: L('تعذر التحديث', 'Sweep failed'), description: errMessage(e) })"
+    },
+    {
+      "file": "src/components/library/screens/settings.tsx",
+      "line": 1043,
+      "pattern": "/expiry/i",
+      "text": "label={L('تنبيه قرب الانتهاء (أيام)', 'Expiry warning (days)')}"
+    },
+    {
+      "file": "src/components/library/screens/settings.tsx",
+      "line": 1044,
+      "pattern": "/expiry/i",
+      "text": "value={<span className=\"tabular-nums\">{p.expiryWarningDays}</span>}"
+    },
+    {
+      "file": "src/components/library/screens/settings.tsx",
+      "line": 1060,
+      "pattern": "/expiry/i",
+      "text": "title={L('تحديث حالات الصلاحية', 'Expiry sweep')}"
+    },
+    {
+      "file": "src/components/library/screens/settings.tsx",
+      "line": 1062,
+      "pattern": "/منتهي/",
+      "text": "'تعليم الدفعات التي تجاوزت تاريخ انتهائها كمنتهية الصلاحية لتستبعدها من البيع',"
+    },
+    {
+      "file": "src/components/library/screens/settings.tsx",
+      "line": 1063,
+      "pattern": "/expiry/i",
+      "text": "'Marks batches past expiry as EXPIRED so FEFO selling excludes them'"
+    },
+    {
+      "file": "src/components/library/screens/settings.tsx",
+      "line": 1066,
+      "pattern": "/\\bsweep\\b/i",
+      "text": "<Button size=\"sm\" onClick={() => void sweep()} disabled={sweeping || !canSweep} className=\"min-h-11 sm:min-h-9\">"
+    },
+    {
+      "file": "src/components/library/screens/settings.tsx",
+      "line": 1068,
+      "pattern": "/\\bsweep\\b/i",
+      "text": "{L('تحديث حالات الصلاحية', 'Run sweep')}"
+    },
+    {
+      "file": "src/components/library/screens/settings.tsx",
+      "line": 1076,
+      "pattern": "/\\bFEFO\\b/i",
+      "text": "'يفحص النظام الصلاحية تلقائياً عند الإقلاع، لكن يمكنك تشغيل الفحص يدوياً بعد تعديل تواريخ الدفعات أو استيراد بيانات. الدفعات المنتهية لا تُحذف — تُستبعد من التوزيع (FEFO) ويمكن إعدامها لاحقاً من شاشة المخزون.',"
+    },
+    {
+      "file": "src/components/library/screens/settings.tsx",
+      "line": 1077,
+      "pattern": "/expired/i",
+      "text": "'The engine sweeps expired batches on boot, but you can run it manually after editing batch dates or importing data. Expired batches are never deleted — they are excluded from FEFO allocation and can be written off from the inventory screen.'"
+    },
+    {
+      "file": "src/components/library/screens/settings.tsx",
+      "line": 1083,
+      "pattern": "/\\bsweep\\b/i",
+      "text": "{L('تشغيل الفحص يتطلب صلاحية تعديل المخزون (INVENTORY_ADJUST).', 'Running the sweep requires INVENTORY_ADJUST permission.')}"
+    },
+    {
+      "file": "src/components/library/screens/settings.tsx",
+      "line": 1340,
+      "pattern": "/صلاحية/",
+      "text": "{L('حفظ إعدادات الأجهزة يتطلب صلاحية HARDWARE_MANAGE إضافية.', 'Saving hardware settings requires the extra HARDWARE_MANAGE permission.')}"
+    }
+  ],
+  "src/components/library/screens/stocktake.tsx": [
+    {
+      "file": "src/components/library/screens/stocktake.tsx",
+      "line": 8,
+      "pattern": "/\\bFEFO\\b/i",
+      "text": "// Sessions list + counting screen with inline counted quantities + FEFO-safe apply."
+    },
+    {
+      "file": "src/components/library/screens/stocktake.tsx",
+      "line": 50,
+      "pattern": "/expiry/i",
+      "text": "batches: { id: string; batchNo: string; qty: number; expiryDate: string | null }[]"
+    },
+    {
+      "file": "src/components/library/screens/stocktake.tsx",
+      "line": 310,
+      "pattern": "/\\bFEFO\\b/i",
+      "text": "التخصيص الآمن <span className=\"font-semibold\">FEFO</span> (استهلاك الباتشات الأقرب انتهاءً أولاً)،"
+    }
+  ],
+  "src/lib/library/api.ts": [
+    {
+      "file": "src/lib/library/api.ts",
+      "line": 66,
+      "pattern": "/صلاحية/",
+      "text": "`ليس لديك صلاحية لتنفيذ هذا الإجراء (${permission})`,"
+    }
+  ],
+  "src/lib/library/config.ts": [
+    {
+      "file": "src/lib/library/config.ts",
+      "line": 71,
+      "pattern": "/expired/i",
+      "text": "allowSellingExpired: false,"
+    },
+    {
+      "file": "src/lib/library/config.ts",
+      "line": 72,
+      "pattern": "/expiry/i",
+      "text": "expiryWarningDays: 90,"
+    },
+    {
+      "file": "src/lib/library/config.ts",
+      "line": 131,
+      "pattern": "/expiry/i",
+      "text": "lastExpirySweepAt: null,"
+    }
+  ],
+  "src/lib/library/db-schema.ts": [
+    {
+      "file": "src/lib/library/db-schema.ts",
+      "line": 20,
+      "pattern": "/expiry/i",
+      "text": "\"CREATE TABLE IF NOT EXISTS \\\"Batch\\\" (\\n    \\\"id\\\" TEXT NOT NULL PRIMARY KEY,\\n    \\\"tenantId\\\" TEXT NOT NULL DEFAULT '',\\n    \\\"productId\\\" TEXT NOT NULL,\\n    \\\"batchNo\\\" TEXT NOT NULL,\\n    \\\"expiryDate\\\" DATETIME,\\n    \\\"quantity\\\" REAL NOT NULL DEFAULT 0,\\n    \\\"costPrice\\\" REAL NOT NULL DEFAULT 0,\\n    \\\"sellPrice\\\" REAL,\\n    \\\"supplierId\\\" TEXT,\\n    \\\"purchaseId\\\" TEXT,\\n    \\\"status\\\" TEXT NOT NULL DEFAULT 'ACTIVE',\\n    \\\"createdAt\\\" DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,\\n    \\\"updatedAt\\\" DATETIME NOT NULL,\\n    CONSTRAINT \\\"Batch_productId_fkey\\\" FOREIGN KEY (\\\"productId\\\") REFERENCES \\\"Product\\\" (\\\"id\\\") ON DELETE RESTRICT ON UPDATE CASCADE,\\n    CONSTRAINT \\\"Batch_supplierId_fkey\\\" FOREIGN KEY (\\\"supplierId\\\") REFERENCES \\\"Supplier\\\" (\\\"id\\\") ON DELETE SET NULL ON UPDATE CASCADE\\n)\","
+    },
+    {
+      "file": "src/lib/library/db-schema.ts",
+      "line": 23,
+      "pattern": "/expiry/i",
+      "text": "\"CREATE TABLE IF NOT EXISTS \\\"PurchaseItem\\\" (\\n    \\\"id\\\" TEXT NOT NULL PRIMARY KEY,\\n    \\\"tenantId\\\" TEXT NOT NULL DEFAULT '',\\n    \\\"purchaseId\\\" TEXT NOT NULL,\\n    \\\"productId\\\" TEXT NOT NULL,\\n    \\\"batchNo\\\" TEXT,\\n    \\\"expiryDate\\\" DATETIME,\\n    \\\"quantity\\\" REAL NOT NULL DEFAULT 0,\\n    \\\"unitCost\\\" REAL NOT NULL DEFAULT 0,\\n    \\\"receivedQty\\\" REAL NOT NULL DEFAULT 0,\\n    \\\"total\\\" REAL NOT NULL DEFAULT 0,\\n    \\\"batchId\\\" TEXT,\\n    CONSTRAINT \\\"PurchaseItem_purchaseId_fkey\\\" FOREIGN KEY (\\\"purchaseId\\\") REFERENCES \\\"Purchase\\\" (\\\"id\\\") ON DELETE CASCADE ON UPDATE CASCADE,\\n    CONSTRAINT \\\"PurchaseItem_productId_fkey\\\" FOREIGN KEY (\\\"productId\\\") REFERENCES \\\"Product\\\" (\\\"id\\\") ON DELETE RESTRICT ON UPDATE CASCADE\\n)\","
+    },
+    {
+      "file": "src/lib/library/db-schema.ts",
+      "line": 25,
+      "pattern": "/expiry/i",
+      "text": "\"CREATE TABLE IF NOT EXISTS \\\"SaleItem\\\" (\\n    \\\"id\\\" TEXT NOT NULL PRIMARY KEY,\\n    \\\"tenantId\\\" TEXT NOT NULL DEFAULT '',\\n    \\\"saleId\\\" TEXT NOT NULL,\\n    \\\"productId\\\" TEXT NOT NULL,\\n    \\\"batchId\\\" TEXT,\\n    \\\"batchNo\\\" TEXT,\\n    \\\"expiryDate\\\" DATETIME,\\n    \\\"productName\\\" TEXT NOT NULL,\\n    \\\"quantity\\\" REAL NOT NULL,\\n    \\\"unitPrice\\\" REAL NOT NULL,\\n    \\\"discount\\\" REAL NOT NULL DEFAULT 0,\\n    \\\"total\\\" REAL NOT NULL,\\n    \\\"costPrice\\\" REAL NOT NULL DEFAULT 0,\\n    \\\"returnedQty\\\" REAL NOT NULL DEFAULT 0,\\n    CONSTRAINT \\\"SaleItem_saleId_fkey\\\" FOREIGN KEY (\\\"saleId\\\") REFERENCES \\\"Sale\\\" (\\\"id\\\") ON DELETE CASCADE ON UPDATE CASCADE,\\n    CONSTRAINT \\\"SaleItem_productId_fkey\\\" FOREIGN KEY (\\\"productId\\\") REFERENCES \\\"Product\\\" (\\\"id\\\") ON DELETE RESTRICT ON UPDATE CASCADE\\n)\","
+    },
+    {
+      "file": "src/lib/library/db-schema.ts",
+      "line": 43,
+      "pattern": "/expiry/i",
+      "text": "\"CREATE INDEX IF NOT EXISTS \\\"Batch_expiryDate_idx\\\" ON \\\"Batch\\\"(\\\"expiryDate\\\")\","
+    }
+  ],
+  "src/lib/library/i18n.ts": [
+    {
+      "file": "src/lib/library/i18n.ts",
+      "line": 80,
+      "pattern": "/expired/i",
+      "text": "'activation.expired': { ar: 'انتهت صلاحية هذا الترخيص', en: 'This license has expired' },"
+    },
+    {
+      "file": "src/lib/library/i18n.ts",
+      "line": 144,
+      "pattern": "/expired/i",
+      "text": "'login.licenseWarning': { ar: 'انتهت صلاحية الترخيص — بعض الوظائف قد تكون مقيدة', en: 'License expired — some features may be restricted' },"
+    },
+    {
+      "file": "src/lib/library/i18n.ts",
+      "line": 157,
+      "pattern": "/expiry/i",
+      "text": "'nav.expiry': { ar: 'الصلاحية', en: 'Expiry' },"
+    },
+    {
+      "file": "src/lib/library/i18n.ts",
+      "line": 181,
+      "pattern": "/expiry/i",
+      "text": "'dash.nearExpiry': { ar: 'قرب انتهاء الصلاحية', en: 'Near Expiry' },"
+    },
+    {
+      "file": "src/lib/library/i18n.ts",
+      "line": 182,
+      "pattern": "/expired/i",
+      "text": "'dash.expired': { ar: 'منتهية الصلاحية', en: 'Expired' },"
+    },
+    {
+      "file": "src/lib/library/i18n.ts",
+      "line": 269,
+      "pattern": "/expired/i",
+      "text": "'pos.expiredBlock': { ar: 'لا يمكن بيع صنف منتهي الصلاحية', en: 'Cannot sell an expired item' },"
+    },
+    {
+      "file": "src/lib/library/i18n.ts",
+      "line": 322,
+      "pattern": "/expiry/i",
+      "text": "'purchases.expiry': { ar: 'تاريخ الانتهاء', en: 'Expiry date' },"
+    },
+    {
+      "file": "src/lib/library/i18n.ts",
+      "line": 333,
+      "pattern": "/expiry/i",
+      "text": "'inv.expiry': { ar: 'إدارة الصلاحية', en: 'Expiry Management' },"
+    },
+    {
+      "file": "src/lib/library/i18n.ts",
+      "line": 337,
+      "pattern": "/expiry/i",
+      "text": "'inv.writeoff': { ar: 'إعدام منتهي الصلاحية', en: 'Expiry write-off' },"
+    },
+    {
+      "file": "src/lib/library/i18n.ts",
+      "line": 342,
+      "pattern": "/expiry/i",
+      "text": "'inv.expiryDate': { ar: 'تاريخ الانتهاء', en: 'Expiry date' },"
+    },
+    {
+      "file": "src/lib/library/i18n.ts",
+      "line": 343,
+      "pattern": "/days[-_]?left/i",
+      "text": "'inv.daysLeft': { ar: 'الأيام المتبقية', en: 'Days left' },"
+    },
+    {
+      "file": "src/lib/library/i18n.ts",
+      "line": 344,
+      "pattern": "/expired/i",
+      "text": "'inv.expired': { ar: 'منتهي', en: 'Expired' },"
+    },
+    {
+      "file": "src/lib/library/i18n.ts",
+      "line": 345,
+      "pattern": "/expiry/i",
+      "text": "'inv.nearExpiry': { ar: 'قريب الانتهاء', en: 'Near expiry' },"
+    },
+    {
+      "file": "src/lib/library/i18n.ts",
+      "line": 351,
+      "pattern": "/expiry/i",
+      "text": "'inv.fefo': { ar: 'FEFO — الأقرب انتهاءً يصرف أولاً', en: 'FEFO — First Expiry, First Out' },"
+    },
+    {
+      "file": "src/lib/library/i18n.ts",
+      "line": 353,
+      "pattern": "/expiry/i",
+      "text": "'inv.sweep': { ar: 'تحديث حالات الصلاحية', en: 'Refresh expiry statuses' },"
+    },
+    {
+      "file": "src/lib/library/i18n.ts",
+      "line": 354,
+      "pattern": "/expiry/i",
+      "text": "'inv.sweepDone': { ar: 'تم تحديث حالات الصلاحية', en: 'Expiry statuses refreshed' },"
+    },
+    {
+      "file": "src/lib/library/i18n.ts",
+      "line": 376,
+      "pattern": "/expiry/i",
+      "text": "'reports.expiry': { ar: 'تقرير الصلاحية', en: 'Expiry Report' },"
+    },
+    {
+      "file": "src/lib/library/i18n.ts",
+      "line": 425,
+      "pattern": "/expired/i",
+      "text": "'settings.allowExpired': { ar: 'السماح ببيع الأصناف منتهية الصلاحية (غير مستحسن)', en: 'Allow selling expired items (not recommended)' },"
+    },
+    {
+      "file": "src/lib/library/i18n.ts",
+      "line": 426,
+      "pattern": "/expiry/i",
+      "text": "'settings.expiryWarning': { ar: 'تنبيه قرب الانتهاء (أيام)', en: 'Expiry warning (days)' },"
+    },
+    {
+      "file": "src/lib/library/i18n.ts",
+      "line": 480,
+      "pattern": "/expiry/i",
+      "text": "'diag.expirySweep': { ar: 'آخر تحديث للصلاحية', en: 'Last expiry sweep' },"
+    },
+    {
+      "file": "src/lib/library/i18n.ts",
+      "line": 489,
+      "pattern": "/expired/i",
+      "text": "'license.expired': { ar: 'منتهي', en: 'Expired' },"
+    },
+    {
+      "file": "src/lib/library/i18n.ts",
+      "line": 494,
+      "pattern": "/expired/i",
+      "text": "'license.graceExpired': { ar: 'انتهت مهلة السماح', en: 'Offline grace expired' },"
+    },
+    {
+      "file": "src/lib/library/i18n.ts",
+      "line": 507,
+      "pattern": "/days[-_]?left/i",
+      "text": "'license.daysLeft': { ar: 'متبقي {n} يوم', en: '{n} days left' },"
+    },
+    {
+      "file": "src/lib/library/i18n.ts",
+      "line": 542,
+      "pattern": "/صلاحية/",
+      "text": "'error.forbidden': { ar: 'ليس لديك صلاحية لتنفيذ هذا الإجراء', en: 'You do not have permission to perform this action' },"
+    },
+    {
+      "file": "src/lib/library/i18n.ts",
+      "line": 543,
+      "pattern": "/expired/i",
+      "text": "'error.unauthorized': { ar: 'انتهت الجلسة — أعد تسجيل الدخول', en: 'Session expired — sign in again' },"
+    }
+  ],
+  "src/lib/library/services/dashboard.ts": [
+    {
+      "file": "src/lib/library/services/dashboard.ts",
+      "line": 20,
+      "pattern": "/expiry/i",
+      "text": "nearExpiryCount: number"
+    },
+    {
+      "file": "src/lib/library/services/dashboard.ts",
+      "line": 21,
+      "pattern": "/expired/i",
+      "text": "expiredCount: number"
+    },
+    {
+      "file": "src/lib/library/services/dashboard.ts",
+      "line": 47,
+      "pattern": "/expiry/i",
+      "text": "const warningDays = pos.expiryWarningDays"
+    },
+    {
+      "file": "src/lib/library/services/dashboard.ts",
+      "line": 94,
+      "pattern": "/expired/i",
+      "text": "where: { tenantId, quantity: { gt: 0 }, status: { in: ['ACTIVE', 'EXPIRED'] } },"
+    },
+    {
+      "file": "src/lib/library/services/dashboard.ts",
+      "line": 95,
+      "pattern": "/expiry/i",
+      "text": "select: { productId: true, quantity: true, costPrice: true, expiryDate: true },"
+    },
+    {
+      "file": "src/lib/library/services/dashboard.ts",
+      "line": 122,
+      "pattern": "/expiry/i",
+      "text": "let nearExpiryCount = 0"
+    },
+    {
+      "file": "src/lib/library/services/dashboard.ts",
+      "line": 123,
+      "pattern": "/expired/i",
+      "text": "let expiredCount = 0"
+    },
+    {
+      "file": "src/lib/library/services/dashboard.ts",
+      "line": 128,
+      "pattern": "/expiry/i",
+      "text": "if (b.expiryDate) {"
+    },
+    {
+      "file": "src/lib/library/services/dashboard.ts",
+      "line": 129,
+      "pattern": "/expiry/i",
+      "text": "const exp = new Date(b.expiryDate.getFullYear(), b.expiryDate.getMonth(), b.expiryDate.getDate())"
+    },
+    {
+      "file": "src/lib/library/services/dashboard.ts",
+      "line": 130,
+      "pattern": "/expired/i",
+      "text": "if (exp < today) expiredCount++"
+    },
+    {
+      "file": "src/lib/library/services/dashboard.ts",
+      "line": 131,
+      "pattern": "/expiry/i",
+      "text": "else if (exp <= warningLimit) nearExpiryCount++"
+    },
+    {
+      "file": "src/lib/library/services/dashboard.ts",
+      "line": 165,
+      "pattern": "/expiry/i",
+      "text": "nearExpiryCount,"
+    },
+    {
+      "file": "src/lib/library/services/dashboard.ts",
+      "line": 166,
+      "pattern": "/expired/i",
+      "text": "expiredCount,"
+    }
+  ],
+  "src/lib/library/services/inventory.ts": [
+    {
+      "file": "src/lib/library/services/inventory.ts",
+      "line": 6,
+      "pattern": "/\\bFEFO\\b/i",
+      "text": "// FEFO allocation, batch-safe stock mutations, adjustments, stocktake."
+    },
+    {
+      "file": "src/lib/library/services/inventory.ts",
+      "line": 24,
+      "pattern": "/expiry/i",
+      "text": "expiryDate: Date | null"
+    },
+    {
+      "file": "src/lib/library/services/inventory.ts",
+      "line": 30,
+      "pattern": "/expiry/i",
+      "text": "* FEFO — First Expiry, First Out."
+    },
+    {
+      "file": "src/lib/library/services/inventory.ts",
+      "line": 32,
+      "pattern": "/expiry/i",
+      "text": "* expiry date are consumed last (safest commercial interpretation)."
+    },
+    {
+      "file": "src/lib/library/services/inventory.ts",
+      "line": 33,
+      "pattern": "/expired/i",
+      "text": "* Expired batches are NEVER allocated (unless explicitly allowed at the caller)."
+    },
+    {
+      "file": "src/lib/library/services/inventory.ts",
+      "line": 39,
+      "pattern": "/expired/i",
+      "text": "opts: { includeExpired?: boolean; tenantId?: string } = {}"
+    },
+    {
+      "file": "src/lib/library/services/inventory.ts",
+      "line": 50,
+      "pattern": "/expiry/i",
+      "text": "orderBy: [{ expiryDate: { sort: 'asc', nulls: 'last' } }, { createdAt: 'asc' }],"
+    },
+    {
+      "file": "src/lib/library/services/inventory.ts",
+      "line": 55,
+      "pattern": "/expired/i",
+      "text": "const eligible = opts.includeExpired"
+    },
+    {
+      "file": "src/lib/library/services/inventory.ts",
+      "line": 57,
+      "pattern": "/expiry/i",
+      "text": ": batches.filter((b) => !b.expiryDate || b.expiryDate >= today)"
+    },
+    {
+      "file": "src/lib/library/services/inventory.ts",
+      "line": 68,
+      "pattern": "/expiry/i",
+      "text": "expiryDate: batch.expiryDate,"
+    },
+    {
+      "file": "src/lib/library/services/inventory.ts",
+      "line": 161,
+      "pattern": "/expired/i",
+      "text": "if (batch.status === 'DEPLETED' || batch.status === 'EXPIRED') {"
+    },
+    {
+      "file": "src/lib/library/services/inventory.ts",
+      "line": 180,
+      "pattern": "/expired/i",
+      "text": "/** Total available (sellable) stock for a product = active, non-expired batches. */"
+    },
+    {
+      "file": "src/lib/library/services/inventory.ts",
+      "line": 194,
+      "pattern": "/expiry/i",
+      "text": "OR: [{ expiryDate: null }, { expiryDate: { gte: today } }],"
+    },
+    {
+      "file": "src/lib/library/services/inventory.ts",
+      "line": 203,
+      "pattern": "/expiry/i",
+      "text": "export type AdjustmentType = 'ADJUSTMENT' | 'DAMAGE' | 'EXPIRY_WRITEOFF'"
+    },
+    {
+      "file": "src/lib/library/services/inventory.ts",
+      "line": 246,
+      "pattern": "/expiry/i",
+      "text": "countedQty === 0 && input.type === 'EXPIRY_WRITEOFF'"
+    },
+    {
+      "file": "src/lib/library/services/inventory.ts",
+      "line": 247,
+      "pattern": "/expired/i",
+      "text": "? 'EXPIRED'"
+    },
+    {
+      "file": "src/lib/library/services/inventory.ts",
+      "line": 278,
+      "pattern": "/expiry/i",
+      "text": "): Promise<{ sessionId: string; lines: { productId: string; nameAr: string; systemQty: number; batches: { id: string; batchNo: string; qty: number; expiryDate: Date | null }[] }[] }> {"
+    },
+    {
+      "file": "src/lib/library/services/inventory.ts",
+      "line": 284,
+      "pattern": "/expiry/i",
+      "text": "include: { batches: { where: { quantity: { gt: 0 } }, orderBy: [{ expiryDate: { sort: 'asc', nulls: 'last' } }] } },"
+    },
+    {
+      "file": "src/lib/library/services/inventory.ts",
+      "line": 291,
+      "pattern": "/expiry/i",
+      "text": "batches: { id: string; batchNo: string; qty: number; expiryDate: Date | null }[]"
+    },
+    {
+      "file": "src/lib/library/services/inventory.ts",
+      "line": 309,
+      "pattern": "/expiry/i",
+      "text": "batches: p.batches.map((b) => ({ id: b.id, batchNo: b.batchNo, qty: b.quantity, expiryDate: b.expiryDate })),"
+    },
+    {
+      "file": "src/lib/library/services/inventory.ts",
+      "line": 342,
+      "pattern": "/expired/i",
+      "text": "where: { productId: line.productId, tenantId, quantity: { gt: 0 }, status: { in: ['ACTIVE', 'DEPLETED', 'EXPIRED'] } },"
+    },
+    {
+      "file": "src/lib/library/services/inventory.ts",
+      "line": 343,
+      "pattern": "/expiry/i",
+      "text": "orderBy: [{ expiryDate: { sort: 'asc', nulls: 'last' } }, { createdAt: 'asc' }],"
+    },
+    {
+      "file": "src/lib/library/services/inventory.ts",
+      "line": 351,
+      "pattern": "/\\bFEFO\\b/i",
+      "text": "// deficit: consume batches FEFO"
+    },
+    {
+      "file": "src/lib/library/services/inventory.ts",
+      "line": 427,
+      "pattern": "/expired/i",
+      "text": "where: { tenantId, quantity: { gt: 0 }, status: { in: ['ACTIVE', 'EXPIRED'] } },"
+    },
+    {
+      "file": "src/lib/library/services/inventory.ts",
+      "line": 434,
+      "pattern": "/expiry/i",
+      "text": "* Expiry sweep for the ACTIVE tenant only: marks ACTIVE/DEPLETED batches past"
+    },
+    {
+      "file": "src/lib/library/services/inventory.ts",
+      "line": 435,
+      "pattern": "/expiry/i",
+      "text": "* their expiry date as EXPIRED so FEFO/sales exclude them, and stamps"
+    },
+    {
+      "file": "src/lib/library/services/inventory.ts",
+      "line": 436,
+      "pattern": "/expiry/i",
+      "text": "* lastExpirySweepAt in the tenant's system config block."
+    },
+    {
+      "file": "src/lib/library/services/inventory.ts",
+      "line": 438,
+      "pattern": "/expired/i",
+      "text": "export async function sweepExpiredBatchesForTenant(): Promise<number> {"
+    },
+    {
+      "file": "src/lib/library/services/inventory.ts",
+      "line": 444,
+      "pattern": "/expiry/i",
+      "text": "expiryDate: { lt: new Date() },"
+    },
+    {
+      "file": "src/lib/library/services/inventory.ts",
+      "line": 447,
+      "pattern": "/expired/i",
+      "text": "data: { status: 'EXPIRED' },"
+    },
+    {
+      "file": "src/lib/library/services/inventory.ts",
+      "line": 453,
+      "pattern": "/expiry/i",
+      "text": "system.lastExpirySweepAt = new Date().toISOString()"
+    },
+    {
+      "file": "src/lib/library/services/inventory.ts",
+      "line": 459,
+      "pattern": "/\\bsweep\\b/i",
+      "text": "// never fail the sweep on a config write issue"
+    }
+  ],
+  "src/lib/library/services/purchases.ts": [
+    {
+      "file": "src/lib/library/services/purchases.ts",
+      "line": 26,
+      "pattern": "/expiry/i",
+      "text": "expiryDate?: string | null"
+    },
+    {
+      "file": "src/lib/library/services/purchases.ts",
+      "line": 102,
+      "pattern": "/expiry/i",
+      "text": "expiryDate: v.item.expiryDate ? new Date(v.item.expiryDate) : null,"
+    },
+    {
+      "file": "src/lib/library/services/purchases.ts",
+      "line": 178,
+      "pattern": "/expiry/i",
+      "text": "expiryDate: item.expiryDate,"
+    }
+  ],
+  "src/lib/library/services/sales.ts": [
+    {
+      "file": "src/lib/library/services/sales.ts",
+      "line": 6,
+      "pattern": "/\\bFEFO\\b/i",
+      "text": "// Atomic sale creation with FEFO allocation, cancellation with restock."
+    },
+    {
+      "file": "src/lib/library/services/sales.ts",
+      "line": 103,
+      "pattern": "/expiry/i",
+      "text": "expiryDate: Date | null"
+    },
+    {
+      "file": "src/lib/library/services/sales.ts",
+      "line": 141,
+      "pattern": "/expired/i",
+      "text": "// FEFO allocation — expired batches are hard-blocked unless policy allows"
+    },
+    {
+      "file": "src/lib/library/services/sales.ts",
+      "line": 143,
+      "pattern": "/expired/i",
+      "text": "includeExpired: pos.allowSellingExpired,"
+    },
+    {
+      "file": "src/lib/library/services/sales.ts",
+      "line": 252,
+      "pattern": "/\\bFEFO\\b/i",
+      "text": "// FEFO: one SaleItem per batch allocation for full traceability"
+    },
+    {
+      "file": "src/lib/library/services/sales.ts",
+      "line": 261,
+      "pattern": "/expiry/i",
+      "text": "expiryDate: alloc.expiryDate,"
+    },
+    {
+      "file": "src/lib/library/services/sales.ts",
+      "line": 333,
+      "pattern": "/\\bFEFO\\b/i",
+      "text": "// group SaleItems back into logical lines (FEFO splits one line across batches)"
+    },
+    {
+      "file": "src/lib/library/services/sales.ts",
+      "line": 355,
+      "pattern": "/expiry/i",
+      "text": "expiry: item.expiryDate ? item.expiryDate.toISOString() : null,"
+    }
+  ],
+  "src/lib/library/services/tenancy.ts": [
+    {
+      "file": "src/lib/library/services/tenancy.ts",
+      "line": 52,
+      "pattern": "/صلاحية/",
+      "text": "throw new ApiError('FORBIDDEN', `ليس لديك صلاحية لتنفيذ هذا الإجراء (${permission})`, 403)"
+    }
+  ],
+  "src/lib/library/system.ts": [
+    {
+      "file": "src/lib/library/system.ts",
+      "line": 236,
+      "pattern": "/expired/i",
+      "text": "* Sweeps expired batches and flags them as EXPIRED."
+    },
+    {
+      "file": "src/lib/library/system.ts",
+      "line": 238,
+      "pattern": "/expired/i",
+      "text": "export async function sweepExpiredBatches(tenantId = 'default'): Promise<number> {"
+    },
+    {
+      "file": "src/lib/library/system.ts",
+      "line": 244,
+      "pattern": "/expiry/i",
+      "text": "expiryDate: { lt: now },"
+    },
+    {
+      "file": "src/lib/library/system.ts",
+      "line": 247,
+      "pattern": "/expired/i",
+      "text": "status: 'EXPIRED',"
+    }
+  ],
+  "src/lib/library/types.ts": [
+    {
+      "file": "src/lib/library/types.ts",
+      "line": 101,
+      "pattern": "/expired/i",
+      "text": "allowSellingExpired: boolean"
+    },
+    {
+      "file": "src/lib/library/types.ts",
+      "line": 102,
+      "pattern": "/expiry/i",
+      "text": "expiryWarningDays: number"
+    },
+    {
+      "file": "src/lib/library/types.ts",
+      "line": 132,
+      "pattern": "/expiry/i",
+      "text": "lastExpirySweepAt: string | null"
+    },
+    {
+      "file": "src/lib/library/types.ts",
+      "line": 161,
+      "pattern": "/expired/i",
+      "text": "| 'EXPIRED'"
+    },
+    {
+      "file": "src/lib/library/types.ts",
+      "line": 165,
+      "pattern": "/expired/i",
+      "text": "| 'OFFLINE_GRACE_EXPIRED'"
+    },
+    {
+      "file": "src/lib/library/types.ts",
+      "line": 200,
+      "pattern": "/expired/i",
+      "text": "status: 'ACTIVE' | 'SUSPENDED' | 'EXPIRED' | 'REVOKED' | 'INVALID'"
+    },
+    {
+      "file": "src/lib/library/types.ts",
+      "line": 315,
+      "pattern": "/expired/i",
+      "text": "expiredSoon: boolean"
+    },
+    {
+      "file": "src/lib/library/types.ts",
+      "line": 351,
+      "pattern": "/expiry/i",
+      "text": "allocations: { batchNo: string | null; expiry: string | null; qty: number }[]"
+    }
+  ]
+}
