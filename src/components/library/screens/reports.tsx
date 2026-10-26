@@ -329,7 +329,14 @@ export function ReportsScreen() {
     if (!data?.chart) return []
     if (type === 'sales') {
       return data.chart.map((r) => ({
-        name: new Intl.DateTimeFormat(lang === 'ar' ? 'ar-EG' : 'en-GB', { day: 'numeric', month: 'short' }).format(new Date((r.date as string) + 'T00:00:00')),
+        name: (() => {
+          try {
+            const d = toSafeDate(r.date ? `${r.date}T00:00:00` : null);
+            return d ? new Intl.DateTimeFormat(lang === 'ar' ? 'ar-EG' : 'en-GB', { day: 'numeric', month: 'short' }).format(d) : String(r.date ?? '—');
+          } catch {
+            return String(r.date ?? '—');
+          }
+        })(),
         revenue: Number(r.revenue ?? 0),
         cost: Number(r.cost ?? 0),
         profit: Number(r.profit ?? 0),

@@ -130,7 +130,17 @@ export const DEFAULT_SYSTEM: SystemConfig = {
 }
 
 export const parseBusiness = (j?: string | BusinessConfig | null) => parse<BusinessConfig>(j, DEFAULT_BUSINESS)
-export const parseBranding = (j?: string | BrandingConfig | null) => parse<BrandingConfig>(j, DEFAULT_BRANDING)
+export const parseBranding = (j?: string | BrandingConfig | null): BrandingConfig => {
+  const base = parse<BrandingConfig>(j, DEFAULT_BRANDING);
+  const raw = (typeof j === 'object' && j !== null) ? j as any : {};
+  return {
+    ...base,
+    primary: base.primary || raw.primaryColor || DEFAULT_BRANDING.primary,
+    secondary: base.secondary || DEFAULT_BRANDING.secondary,
+    accent: base.accent || DEFAULT_BRANDING.accent,
+    logoDataUrl: base.logoDataUrl || raw.logoUrl || null,
+  };
+}
 export const parseHardware = (j?: string | HardwareConfig | null) => parse<HardwareConfig>(j, DEFAULT_HARDWARE)
 export const parsePos = (j?: string | PosConfig | null) => parse<PosConfig>(j, DEFAULT_POS)
 export const parseLocalization = (j?: string | LocalizationConfig | null) => parse<LocalizationConfig>(j, DEFAULT_LOCALIZATION)

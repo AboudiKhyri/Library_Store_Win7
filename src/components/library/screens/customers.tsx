@@ -400,7 +400,7 @@ export function CustomersScreen() {
                 <button
                   type="button"
                   onClick={() => openLoyalty(row)}
-                  className="inline-flex items-center gap-1 rounded-md border border-primary/25 bg-primary/[0.07] px-2 py-0.5 text-[11px] font-bold tabular-nums text-primary transition hover:bg-primary/15"
+                  className="inline-flex items-center gap-1 rounded-md border border-primary/25 bg-primary/10 px-2 py-0.5 text-[11px] font-bold tabular-nums text-primary transition hover:bg-primary/15"
                   title="سجل نقاط الولاء"
                 >
                   <Sparkles className="h-3 w-3" />
@@ -637,7 +637,7 @@ export function CustomersScreen() {
           ) : (
             <>
               <div className="grid grid-cols-2 gap-3">
-                <div className="rounded-xl border border-primary/25 bg-primary/[0.06] p-3 text-center">
+                <div className="rounded-xl border border-primary/25 bg-primary/10 p-3 text-center">
                   <p className="text-[11px] text-muted-foreground">الرصيد الحالي</p>
                   <p className="mt-1 text-2xl font-black tabular-nums text-primary">{loyaltyData.balance}</p>
                   <p className="text-[10px] text-muted-foreground">نقطة</p>
@@ -678,7 +678,7 @@ export function CustomersScreen() {
                       dir="ltr"
                       inputMode="numeric"
                       className="qx-num h-9 w-24"
-                      placeholder="±نقاط"
+                      placeholder="+10 / -5"
                       value={adjustPts}
                       onChange={(e) => setAdjustPts(e.target.value.replace(/[^0-9-]/g, ''))}
                       aria-label="عدد النقاط"

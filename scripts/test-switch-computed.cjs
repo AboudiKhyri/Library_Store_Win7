@@ -1,0 +1,13 @@
+console.log('--- CSS Transforms Level 2 spec check ---');
+console.log('Spec: https://www.w3.org/TR/css-transforms-2/#ctm');
+console.log('The current transform matrix (CTM) is computed by multiplying:');
+console.log('1. translate');
+console.log('2. rotate');
+console.log('3. scale');
+console.log('4. transform');
+console.log('Therefore: CTM = translate * rotate * scale * transform');
+console.log('If translate is -14px and transform is translateX(-14px):');
+console.log('Total displacement = -14px + -14px = -28px!');
+console.log('Track width = 32px. Thumb width = 16px.');
+console.log('Thumb starts at right: 2px (left: 14px).');
+console.log('Displacement: -28px -> thumb left = 14px - 28px = -14px (14px OVERHANG to the left!)');

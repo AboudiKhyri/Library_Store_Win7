@@ -47,7 +47,17 @@ class AppLifecycle {
                 return;
             isCleanedUp = true;
             this.logger.info('[BOOT] Application shutdown triggered — terminating server process tree');
-            this.serverManager.stop();
+            try {
+                const res = this.serverManager.stop();
+                if (res && typeof res.catch === 'function') {
+                    res.catch((err) => {
+                        this.logger.error('[BOOT] Error stopping server:', err);
+                    });
+                }
+            }
+            catch (err) {
+                this.logger.error('[BOOT] Exception during server stop:', err);
+            }
         };
         electron_1.app.on('before-quit', cleanup);
         electron_1.app.on('will-quit', cleanup);

@@ -713,7 +713,7 @@ export function PosScreen() {
       const label = suspendLabel.trim() || defaultSuspendLabel()
       await api('/sales/suspended', {
         method: 'POST',
-        body: { label, cart: JSON.stringify(lines) },
+        body: { label, cart: lines },
       })
       toast({ title: 'تم تعليق الفاتورة', description: label })
       setSuspendOpen(false)
@@ -742,7 +742,8 @@ export function PosScreen() {
   }
 
   async function restoreSuspended(row: SuspendedRow) {
-    const restored: PosCartLine[] = (row.cart ?? [])
+    const cartRaw = Array.isArray(row.cart) ? row.cart : (typeof row.cart === 'string' ? JSON.parse(row.cart || '[]') : []);
+    const restored: PosCartLine[] = (Array.isArray(cartRaw) ? cartRaw : [])
       .filter((l) => l && typeof l.productId === 'string' && Number(l.quantity) > 0)
       .map((l) => ({
         productId: l.productId,
@@ -761,7 +762,7 @@ export function PosScreen() {
     setLines(restored)
     setResumeOpen(false)
     try {
-      await api('/sales/suspended', { method: 'DELETE', body: { id: row.id } })
+      await api(`/sales/suspended/${row.id}`, { method: 'DELETE' })
     } catch {
       // non-fatal — the stored copy can be discarded again later
     }
@@ -908,7 +909,7 @@ export function PosScreen() {
 
           {/* loyalty redeem row — only when the loyalty module is licensed & enabled */}
           {loyalty && loyaltyModule && (
-            <div className="rounded-lg border border-primary/25 bg-primary/[0.06] p-2.5">
+            <div className="rounded-lg border border-primary/25 bg-primary/10 p-2.5">
               <div className="flex items-center justify-between gap-2">
                 <div className="flex items-center gap-1.5 text-[11px] font-semibold text-primary">
                   <LoyaltyTierBadge
@@ -1360,14 +1361,19 @@ export function PosScreen() {
                 >
                   <div className="min-w-0">
                     <p className="truncate text-sm font-semibold">{row.label}</p>
-                    <p className="text-[11px] text-muted-foreground">
-                      {(row.cart ?? []).length} صنف ·{' '}
-                      {money(
-                        r2(
-                          (row.cart ?? []).reduce((s, l) => s + (Number(l.unitPrice) || 0) * (Number(l.quantity) || 0) - (Number(l.discount) || 0), 0)
-                        )
-                      )}
-                    </p>
+                    {(() => {
+                      const cArr = Array.isArray(row.cart) ? row.cart : [];
+                      return (
+                        <p className="text-[11px] text-muted-foreground">
+                          {cArr.length} صنف ·{' '}
+                          {money(
+                            r2(
+                              cArr.reduce((s, l) => s + (Number(l.unitPrice) || 0) * (Number(l.quantity) || 0) - (Number(l.discount) || 0), 0)
+                            )
+                          )}
+                        </p>
+                      );
+                    })()}
                   </div>
                   <Button size="sm" onClick={() => void restoreSuspended(row)}>
                     <Play className="me-1 h-3.5 w-3.5" />

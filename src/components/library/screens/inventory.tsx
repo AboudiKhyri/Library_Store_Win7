@@ -155,6 +155,7 @@ function Chip({
 export function InventoryScreen() {
   const t = useLibraryStore((s) => s.t)
   const status = useLibraryStore((s) => s.status)
+  const warningDays = Number(status?.inventory?.expiryWarningDays) || 30
 
   // shared adjust dialog (used by batches tab + product batches dialog)
   const [adjustBatch, setAdjustBatch] = useState<BatchRow | null>(null)
@@ -283,7 +284,7 @@ function CurrentStockTab({
     setBatchesLoading(true)
     void (async () => {
       try {
-        const res = await api<Paged<BatchRow>>(`/inventory/batches?productId=${batchesTarget.productId}&pageSize=100`)
+        const res = await api<Paged<BatchRow>>(`/inventory/batches?productId=${batchesTarget.productId || (batchesTarget as any).id}&pageSize=100`)
         if (alive) setProductBatches(res.items)
       } catch {
         if (alive) setProductBatches([])

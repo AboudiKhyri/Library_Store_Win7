@@ -71,7 +71,7 @@ export const useLibraryStore = create<LibraryStoreState>((set, get) => {
     view: 'login',
     viewParams: {},
     lang: 'ar',
-    theme: 'dark',
+    theme: (typeof window !== 'undefined' && ((localStorage.getItem('library-theme') as 'dark' | 'light') || (localStorage.getItem('qx-theme') as 'dark' | 'light'))) || 'dark',
     sidebarOpen: false,
     sidebarCollapsed: false,
 
@@ -80,11 +80,11 @@ export const useLibraryStore = create<LibraryStoreState>((set, get) => {
       const lang = status.localization?.language ?? 'ar'
       let theme: 'dark' | 'light' = status.branding?.defaultTheme === 'light' ? 'light' : 'dark'
       if (typeof window !== 'undefined') {
-        theme = (localStorage.getItem('library-theme') as 'dark' | 'light') ||
-                (localStorage.getItem('qx-theme') as 'dark' | 'light') ||
-                theme
+        const saved = (localStorage.getItem('library-theme') as 'dark' | 'light') ||
+                      (localStorage.getItem('qx-theme') as 'dark' | 'light')
+        if (saved) theme = saved
       }
-      applyDocument(lang, theme)
+      applyDocument(lang, theme); applyBranding(status?.branding);
       set({
         booted: true,
         bootError: null,
@@ -103,9 +103,9 @@ export const useLibraryStore = create<LibraryStoreState>((set, get) => {
         const lang = status.localization?.language ?? 'ar'
         let theme: 'dark' | 'light' = status.branding?.defaultTheme === 'light' ? 'light' : 'dark'
         if (typeof window !== 'undefined') {
-          theme = (localStorage.getItem('library-theme') as 'dark' | 'light') ||
-                  (localStorage.getItem('qx-theme') as 'dark' | 'light') ||
-                  theme
+          const saved = (localStorage.getItem('library-theme') as 'dark' | 'light') ||
+                        (localStorage.getItem('qx-theme') as 'dark' | 'light')
+          if (saved) theme = saved
         }
         applyDocument(lang, theme)
         const user = session.user
@@ -126,7 +126,7 @@ export const useLibraryStore = create<LibraryStoreState>((set, get) => {
     refreshStatus: async () => {
       try {
         const status = await api<SystemStatus>('/system/status')
-        set({ status })
+        applyBranding(status?.branding); set({ status })
       } catch {
         // keep last known status when offline
       }
@@ -158,9 +158,21 @@ export const useLibraryStore = create<LibraryStoreState>((set, get) => {
     setTheme: (theme) => {
       if (typeof window !== 'undefined') {
         localStorage.setItem('library-theme', theme)
+        localStorage.setItem('qx-theme', theme)
       }
       applyDocument(get().lang, theme)
       set({ theme })
+
+      // Persist chosen theme to server branding settings in background
+      const currentStatus = get().status
+      if (currentStatus) {
+        const branding = { ...currentStatus.branding, defaultTheme: theme }
+        api('/system/settings/branding', { method: 'PUT', body: branding })
+          .then(() => {
+            set((s) => s.status ? { status: { ...s.status, branding: { ...s.status.branding, defaultTheme: theme } } } : s)
+          })
+          .catch(() => {})
+      }
     },
     toggleSidebar: () => set((s) => ({ sidebarOpen: !s.sidebarOpen })),
     setSidebarCollapsed: (v) => set({ sidebarCollapsed: v }),
@@ -183,7 +195,7 @@ export const useLibraryStore = create<LibraryStoreState>((set, get) => {
     fmtDateTime: (d) => fmtDateTime(d, get().lang),
     has: (permission) => {
       const s = get().session
-      return !!s && s.permissions.includes(permission as never)
+      return Boolean(s && Array.isArray(s.permissions) && s.permissions.includes(permission as never))
     },
   }
 })
@@ -191,12 +203,13 @@ export const useLibraryStore = create<LibraryStoreState>((set, get) => {
 /** First accessible view for a user (dashboard first, else any permitted). */
 function pickFirstView(status: SystemStatus | null, user: SessionUser | null): string {
   if (!user) return 'login'
+  const perms = Array.isArray(user?.permissions) ? user.permissions : []
   // Cashier lands directly on POS
   if (user.roleKey && user.roleKey.toLowerCase() === 'cashier') {
     return 'pos'
   }
   // Manager or owner or user with DASHBOARD_VIEW lands on dashboard
-  if (user.roleKey === 'owner' || user.roleKey === 'admin' || user.permissions.includes('DASHBOARD_VIEW')) {
+  if (user.roleKey === 'owner' || user.roleKey === 'admin' || perms.includes('DASHBOARD_VIEW')) {
     return 'dashboard'
   }
   const fallbacks = ['pos', 'products', 'sales-history', 'purchases', 'reports']

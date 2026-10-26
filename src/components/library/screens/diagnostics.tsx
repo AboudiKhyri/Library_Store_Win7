@@ -118,7 +118,14 @@ export function DiagnosticsScreen() {
     try {
       const res = await api<DiagnosticsPayload>('/diagnostics')
       setData(res)
-      useLibraryStore.setState({ status: res.status })
+      useLibraryStore.setState((s) => ({
+        status: {
+          ...s.status,
+          ...res.status,
+          hardwareCaps: { ...s.status?.hardwareCaps, ...res.status?.hardwareCaps },
+          modules: { ...s.status?.modules, ...res.status?.modules },
+        },
+      }))
     } catch (e) {
       setError(errMessage(e))
     } finally {

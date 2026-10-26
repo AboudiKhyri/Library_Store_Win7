@@ -144,7 +144,12 @@ export function RolesScreen() {
   function openEdit(r: RoleItem) {
     setEditing(r)
     setForm({ key: r.key, nameAr: r.nameAr, nameEn: r.nameEn === r.nameAr ? '' : r.nameEn, description: r.description })
-    setSelected([...r.permissions])
+    if (r.key === 'owner') {
+      const allPerms = PERMISSION_GROUPS.flatMap((g) => g.perms)
+      setSelected(Array.from(new Set([...r.permissions, ...allPerms])))
+    } else {
+      setSelected([...r.permissions])
+    }
     setDialogOpen(true)
   }
 
@@ -318,7 +323,7 @@ export function RolesScreen() {
                   {r.usersCount} {L('مستخدم', r.usersCount === 1 ? 'user' : 'users')}
                 </Badge>
                 <Badge variant="secondary" className="text-[11px]">
-                  {t('roles.count')}: <span className="tabular-nums">{r.permissions.length}</span> / 33
+                  {t('roles.count')}: <span className="tabular-nums">{r.key === 'owner' ? 33 : r.permissions.filter((p) => p !== 'LICENSE_DEACTIVATE').length}</span> / 33
                 </Badge>
                 <span className="ms-auto text-[11px] text-muted-foreground">{r.nameEn}</span>
               </div>
@@ -333,7 +338,9 @@ export function RolesScreen() {
           <DialogHeader>
             <DialogTitle>{editing ? L(`تعديل الدور: ${editing.nameAr}`, `Edit role: ${editing.nameEn || editing.nameAr}`) : t('roles.add')}</DialogTitle>
             <DialogDescription>
-              {editing && editing.isSystem
+              {editing && editing.key === 'owner'
+                ? L('دور المالك يمتلك كامل الصلاحيات دائماً لحماية النظام', 'Owner role always has full permissions to protect the system')
+                : editing && editing.isSystem
                 ? t('roles.systemHint')
                 : L('حدد اسم الدور ثم اضبط مصفوفة الصلاحيات حسب المجموعات', 'Set the role name then configure its permission matrix by group')}
             </DialogDescription>
@@ -380,7 +387,7 @@ export function RolesScreen() {
               <div className="mb-2 flex items-center justify-between">
                 <p className="text-sm font-semibold">{t('roles.permissions')}</p>
                 <Badge variant="secondary" className="text-[11px]">
-                  <span className="tabular-nums">{selected.length}</span> / 33
+                  <span className="tabular-nums">{editing?.key === 'owner' ? 33 : selected.filter((p) => p !== 'LICENSE_DEACTIVATE').length}</span> / 33
                 </Badge>
               </div>
               <div className="grid gap-3">
@@ -434,7 +441,7 @@ export function RolesScreen() {
             <Button variant="outline" onClick={() => setDialogOpen(false)} disabled={saving}>
               {t('app.cancel')}
             </Button>
-            <Button onClick={() => void save()} disabled={saving}>
+            <Button onClick={() => void save()} disabled={saving || editing?.key === 'owner'}>
               {saving && <Loader2 className="me-2 h-4 w-4 animate-spin" />}
               {t('app.save')}
             </Button>

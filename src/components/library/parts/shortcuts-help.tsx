@@ -46,12 +46,40 @@ const SCOPE_META: Record<string, { ar: string; en: string; icon: React.Component
   palette: { ar: 'اللوحة', en: 'Palette', icon: Search },
 }
 
-export function ShortcutsHelpOverlay() {
+interface ShortcutsHelpOverlayProps {
+  open?: boolean
+  setOpen?: (open: boolean) => void
+  onClose?: () => void
+}
+
+export function ShortcutsHelpOverlay({
+  open: controlledOpen,
+  setOpen: controlledSetOpen,
+  onClose,
+}: ShortcutsHelpOverlayProps = {}) {
   const view = useLibraryStore((s) => s.view)
   const lang = useLibraryStore((s) => s.lang)
-  const [open, setOpen] = useState(false)
+  const [internalOpen, setInternalOpen] = useState(false)
 
-  const toggle = useCallback(() => setOpen((v) => !v), [])
+  const isControlled = typeof controlledOpen === 'boolean'
+  const open = isControlled ? controlledOpen : internalOpen
+
+  const setOpen = useCallback(
+    (value: boolean | ((prev: boolean) => boolean)) => {
+      const nextValue = typeof value === 'function' ? value(open) : value
+      if (!nextValue && onClose) {
+        onClose()
+      }
+      if (controlledSetOpen) {
+        controlledSetOpen(nextValue)
+      } else {
+        setInternalOpen(nextValue)
+      }
+    },
+    [open, controlledSetOpen, onClose]
+  )
+
+  const toggle = useCallback(() => setOpen((v) => !v), [setOpen])
 
   useEffect(() => {
     function handler(e: KeyboardEvent) {
@@ -74,7 +102,7 @@ export function ShortcutsHelpOverlay() {
     }
     window.addEventListener('keydown', handler)
     return () => window.removeEventListener('keydown', handler)
-  }, [open])
+  }, [open, setOpen])
 
   const onPos = view === 'pos'
   const groups: { scope: string; items: ShortcutDef[] }[] = [

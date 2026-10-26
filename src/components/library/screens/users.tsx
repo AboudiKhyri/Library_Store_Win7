@@ -67,6 +67,11 @@ export function UsersScreen() {
   const [form, setForm] = useState({ username: '', displayName: '', phone: '', roleKey: '', password: '', active: true })
   const [saving, setSaving] = useState(false)
 
+  // admin auth confirmation for new user creation
+  const [adminAuthOpen, setAdminAuthOpen] = useState(false)
+  const [adminPassword, setAdminPassword] = useState('')
+  const [adminAuthError, setAdminAuthError] = useState<string | null>(null)
+
   // delete confirm
   const [deleteTarget, setDeleteTarget] = useState<UserRow | null>(null)
   const [deleting, setDeleting] = useState(false)
@@ -120,7 +125,7 @@ export function UsersScreen() {
     setDialogOpen(true)
   }
 
-  async function save() {
+  async function handleSaveClick() {
     if (!form.displayName.trim() || !form.roleKey || (!editing && !form.username)) {
       toast({ variant: 'destructive', title: L('بيانات ناقصة', 'Missing fields'), description: L('أكمل الاسم واسم المستخدم والدور', 'Fill name, username and role') })
       return
@@ -129,9 +134,9 @@ export function UsersScreen() {
       toast({ variant: 'destructive', title: L('كلمة المرور مطلوبة', 'Password required'), description: PASSWORD_HINT })
       return
     }
-    setSaving(true)
-    try {
-      if (editing) {
+    if (editing) {
+      setSaving(true)
+      try {
         const body: Record<string, unknown> = {
           displayName: form.displayName.trim(),
           phone: form.phone.trim() || null,
@@ -141,23 +146,49 @@ export function UsersScreen() {
         if (form.password) body.password = form.password
         await api(`/users/${editing.id}`, { method: 'PUT', body })
         toast({ title: L('تم حفظ التعديلات', 'User updated'), description: `${form.displayName} (${form.username})` })
-      } else {
-        await api('/users', {
-          method: 'POST',
-          body: {
-            username: form.username.trim().toLowerCase(),
-            displayName: form.displayName.trim(),
-            phone: form.phone.trim() || undefined,
-            roleKey: form.roleKey,
-            password: form.password,
-          },
-        })
-        toast({ title: L('تم إنشاء المستخدم', 'User created'), description: `${form.displayName} (${form.username})` })
+        setDialogOpen(false)
+        await load(page)
+      } catch (e) {
+        toast({ variant: 'destructive', title: L('تعذر الحفظ', 'Save failed'), description: errMessage(e) })
+      } finally {
+        setSaving(false)
       }
+    } else {
+      setAdminPassword('')
+      setAdminAuthError(null)
+      setAdminAuthOpen(true)
+    }
+  }
+
+  async function confirmCreateUser(e?: React.FormEvent) {
+    if (e) e.preventDefault()
+    if (!adminPassword.trim()) {
+      setAdminAuthError(L('كلمة مرور المدير مطلوبة لتأكيد الإنشاء', 'Admin password is required'))
+      return
+    }
+    setSaving(true)
+    setAdminAuthError(null)
+    try {
+      await api('/users', {
+        method: 'POST',
+        body: {
+          username: form.username.trim().toLowerCase(),
+          displayName: form.displayName.trim(),
+          phone: form.phone.trim() || undefined,
+          roleKey: form.roleKey,
+          password: form.password,
+          adminPassword: adminPassword,
+        },
+      })
+      toast({ title: L('تم إنشاء المستخدم', 'User created'), description: `${form.displayName} (${form.username})` })
+      setAdminAuthOpen(false)
       setDialogOpen(false)
-      await load(editing ? page : 1)
+      setAdminPassword('')
+      await load(1)
     } catch (e) {
-      toast({ variant: 'destructive', title: L('تعذر الحفظ', 'Save failed'), description: errMessage(e) })
+      const msg = errMessage(e)
+      setAdminAuthError(msg)
+      toast({ variant: 'destructive', title: L('تعذر إنشاء المستخدم', 'Failed to create user'), description: msg })
     } finally {
       setSaving(false)
     }
@@ -422,11 +453,81 @@ export function UsersScreen() {
             <Button variant="outline" onClick={() => setDialogOpen(false)} disabled={saving}>
               {t('app.cancel')}
             </Button>
-            <Button onClick={() => void save()} disabled={saving}>
+            <Button onClick={() => void handleSaveClick()} disabled={saving}>
               {saving && <Loader2 className="me-2 h-4 w-4 animate-spin" />}
               {t('app.save')}
             </Button>
           </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Admin password confirmation modal for creating user */}
+      <Dialog
+        open={adminAuthOpen}
+        onOpenChange={(v) => {
+          if (!saving) {
+            setAdminAuthOpen(v)
+            if (!v) {
+              setAdminPassword('')
+              setAdminAuthError(null)
+            }
+          }
+        }}
+      >
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <ShieldCheck className="h-5 w-5 text-primary" />
+              {L('تأكيد صلاحية المدير (Admin)', 'Admin Authorization Required')}
+            </DialogTitle>
+            <DialogDescription>
+              {L('يرجى إدخال كلمة مرور المدير (Admin) لتأكيد إنشاء المستخدم الجديد.', 'Please enter the admin password to confirm creating the new user.')}
+            </DialogDescription>
+          </DialogHeader>
+
+          <form onSubmit={confirmCreateUser} className="space-y-4 py-2">
+            <div className="space-y-1.5">
+              <Label htmlFor="qx-admin-auth-password" className="flex items-center gap-1.5">
+                <KeyRound className="h-3.5 w-3.5 text-primary" />
+                {L('كلمة مرور المدير (Admin)', 'Admin Password')}
+              </Label>
+              <Input
+                id="qx-admin-auth-password"
+                type="password"
+                dir="ltr"
+                value={adminPassword}
+                onChange={(e) => {
+                  setAdminPassword(e.target.value)
+                  if (adminAuthError) setAdminAuthError(null)
+                }}
+                placeholder="••••••••"
+                autoComplete="current-password"
+                autoFocus
+              />
+              {adminAuthError && (
+                <p className="text-xs font-medium text-[var(--danger)]">{adminAuthError}</p>
+              )}
+            </div>
+
+            <DialogFooter className="gap-2 pt-2">
+              <Button
+                type="button"
+                variant="outline"
+                onClick={() => {
+                  setAdminAuthOpen(false)
+                  setAdminPassword('')
+                  setAdminAuthError(null)
+                }}
+                disabled={saving}
+              >
+                {t('app.cancel')}
+              </Button>
+              <Button type="submit" disabled={saving || !adminPassword.trim()}>
+                {saving && <Loader2 className="me-2 h-4 w-4 animate-spin" />}
+                {L('تأكيد وإنشاء', 'Confirm & Create')}
+              </Button>
+            </DialogFooter>
+          </form>
         </DialogContent>
       </Dialog>
 

@@ -12,7 +12,7 @@ desktopEngine.runDesktop({
   productNameEn: 'Library Store',
   appId: 'com.library.supermarket',
   defaultPort: 3210,
-  version: '1.0.0',
+  version: '1.0.1',
   build: '2026092201',
   backgroundColor: '#0e141c',
   minWidth: 1024,

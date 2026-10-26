@@ -10,7 +10,7 @@ echo ========================================================
 
 cd /d "%~dp0"
 
-set "DATABASE_URL=file:../data/custom.db"
+set "DATABASE_URL=file:%~dp0data\custom.db"
 set "PORT=3210"
 set "HOSTNAME=127.0.0.1"
 set "NODE_ENV=production"

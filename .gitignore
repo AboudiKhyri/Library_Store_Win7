@@ -30,7 +30,11 @@ data/*.db
 data/*.db-journal
 data/*.db-wal
 data/*.db-shm
-data/*.bak
+data/*.bak*
+data/*.db*
+data/theme.json
+data/backups/
+server/data/
 data/logs/
 
 # IDE & OS files

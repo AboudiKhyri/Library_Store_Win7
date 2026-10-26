@@ -7,6 +7,7 @@
 
 import { useEffect, useState, ReactNode } from 'react'
 import Image from 'next/image'
+import { Spinner } from '@/components/ui/spinner'
 import { useLibraryStore } from './store'
 import { cn } from '@/lib/utils'
 import { Button } from '@/components/ui/button'
@@ -86,7 +87,7 @@ const VIEW_COMPONENTS: Record<string, ReactNode> = {
 
 function SplashScreen() {
   return (
-    <div className="flex h-screen w-screen flex-col items-center justify-center bg-[#0e141c] text-[#e7eef7]">
+    <div className="flex h-screen w-screen flex-col items-center justify-center bg-background text-foreground">
       <div className="flex flex-col items-center gap-4 text-center">
         <div className="relative flex h-16 w-16 items-center justify-center rounded-2xl bg-primary/20 shadow-xl ring-1 ring-primary/30">
           <Image src="/logo.png" alt="Library Store" width={40} height={40} className="object-contain" priority />
@@ -95,9 +96,11 @@ function SplashScreen() {
           <h1 className="text-xl font-bold tracking-tight">Library Store</h1>
           <p className="text-xs text-muted-foreground">نظام إدارة المتاجر والمبيعات — وضع دون اتصال</p>
         </div>
-        <div className="mt-2 flex items-center gap-2 text-xs text-primary">
-          <Loader2 className="h-4 w-4 animate-spin" />
-          <span>جاري تهيئة النظام...</span>
+        <div className="mt-4 flex flex-col items-center gap-2">
+          <div className="h-[20px] w-[246px] rounded-[4px] border-[1.5px] border-[#0078d7] dark:border-primary/80 bg-[#f1f5f9] dark:bg-muted/40 overflow-hidden relative shadow-inner">
+            <div className="absolute top-0 bottom-0 bg-[#0078d7] dark:bg-primary rounded-[2px] animate-simple-progress" />
+          </div>
+          <span className="text-xs font-semibold text-primary">جاري التحميل...</span>
         </div>
       </div>
     </div>
@@ -168,17 +171,7 @@ function MainApp({ status, session }: { status: SystemStatus; session: SessionUs
             {sidebarCollapsed ? <PanelRightOpen className="h-4 w-4" /> : <PanelRightClose className="h-4 w-4" />}
           </Button>
 
-          <div className="flex min-w-0 items-center gap-2">
-            {status?.branding?.logoDataUrl ? (
-              <img src={status?.branding?.logoDataUrl} alt={displayName} className="h-8 w-8 rounded-lg object-contain" />
-            ) : (
-              <Image src="/logo.png" alt="Library Store" width={32} height={32} className="rounded-lg object-contain" />
-            )}
-            <div className="min-w-0 leading-tight">
-              <p className="truncate text-sm font-bold">{displayName}</p>
-              <p className="truncate text-[11px] text-muted-foreground">{appName}</p>
-            </div>
-          </div>
+
 
           <div className="ms-auto flex items-center gap-1">
             <button
@@ -257,7 +250,7 @@ function MainApp({ status, session }: { status: SystemStatus; session: SessionUs
           <span className="truncate">Library Store · © 2026 Library Store · All rights reserved</span>
           <span className="flex items-center gap-1.5 whitespace-nowrap">
             <span className="font-bold text-primary">Library Store</span>
-            <span className="tabular-nums opacity-70">v{status?.version ?? '1.0.0'}</span>
+            <span className="tabular-nums opacity-70">v{status?.version ?? '1.0.1'}</span>
           </span>
         </footer>
       </div>
@@ -266,7 +259,7 @@ function MainApp({ status, session }: { status: SystemStatus; session: SessionUs
       <CommandPalette open={paletteOpen} setOpen={setPaletteOpen} />
 
       {/* Keyboard shortcuts help (?) */}
-      <ShortcutsHelpOverlay />
+      <ShortcutsHelpOverlay open={helpOpen} setOpen={setHelpOpen} />
 
       {/* Onboarding guided tour */}
       <GuidedTour open={tourOpen} onClose={() => setTourOpen(false)} />
@@ -275,6 +268,28 @@ function MainApp({ status, session }: { status: SystemStatus; session: SessionUs
 }
 
 // ---------------- Sidebar ----------------
+
+function formatSidebarDate(lang: string = 'ar'): string {
+  try {
+    const now = new Date()
+    if (lang === 'en') {
+      return new Intl.DateTimeFormat('en-US', {
+        weekday: 'long',
+        month: 'long',
+        day: 'numeric',
+        year: 'numeric',
+      }).format(now)
+    }
+    return new Intl.DateTimeFormat('ar-u-nu-latn', {
+      weekday: 'long',
+      day: 'numeric',
+      month: 'long',
+      year: 'numeric',
+    }).format(now).replace('،', '')
+  } catch {
+    return new Date().toLocaleDateString(lang === 'ar' ? 'ar-EG' : 'en-US')
+  }
+}
 
 function SidebarContent({
   collapsed,
@@ -290,6 +305,17 @@ function SidebarContent({
   status: SystemStatus
 }) {
   const t = useLibraryStore((s) => s.t)
+  const lang = useLibraryStore((s) => s.lang)
+  const [todayDate, setTodayDate] = useState(() => formatSidebarDate(lang))
+
+  useEffect(() => {
+    setTodayDate(formatSidebarDate(lang))
+    const timer = setInterval(() => {
+      setTodayDate(formatSidebarDate(lang))
+    }, 60000)
+    return () => clearInterval(timer)
+  }, [lang])
+
   return (
     <div className="flex h-full flex-col">
       <div className={cn('flex h-14 items-center gap-2 border-b px-4', collapsed && 'justify-center px-0')}>
@@ -300,8 +326,8 @@ function SidebarContent({
         )}
         {!collapsed && (
           <div className="leading-tight">
-            <p className="text-sm font-extrabold tracking-wide">Library Store</p>
-            <p className="text-[10px] text-muted-foreground">نظام إدارة المتاجر</p>
+            <p className="text-sm font-extrabold tracking-wide">{status?.business?.displayName || status?.branding?.appName || 'Library Store'}</p>
+            <p className="text-[10px] text-muted-foreground">{status?.business?.businessName || (status?.branding as any)?.tagline || 'نظام إدارة المتاجر'}</p>
           </div>
         )}
       </div>
@@ -349,8 +375,7 @@ function SidebarContent({
             collapsed && 'justify-center px-0'
           )}
         >
-          <Image src="/logo.png" alt="" width={18} height={18} className="rounded object-contain" />
-          {!collapsed && <span>Library Store Offline</span>}
+          {!collapsed && <span className="truncate">{todayDate}</span>}
         </div>
       </div>
     </div>

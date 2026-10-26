@@ -340,44 +340,93 @@ export function PurchasesScreen() {
       />
 
       {/* Filters */}
-      <SectionCard>
-        <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-5">
-          <div className="relative">
-            <Search className="absolute start-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
-            <Input
-              value={q}
-              onChange={(e) => setQ(e.target.value)}
-              placeholder="بحث برقم الفاتورة أو المورد..."
-              className="ps-9"
-              aria-label="بحث"
-            />
+      <SectionCard className="border border-border/60 shadow-sm">
+        <div className="space-y-3">
+          <div className="flex flex-col gap-3 lg:flex-row lg:items-center">
+            <div className="relative min-w-0 flex-1">
+              <Search className="pointer-events-none absolute start-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+              <Input
+                value={q}
+                onChange={(e) => setQ(e.target.value)}
+                placeholder="بحث برقم الفاتورة أو المورد..."
+                className="h-10 ps-9 bg-background"
+                aria-label="بحث"
+              />
+            </div>
+            {(q || status !== 'all' || paymentStatus !== 'all' || from || to) && (
+              <Button
+                variant="outline"
+                size="sm"
+                className="h-10 shrink-0 gap-1.5 border-dashed text-xs text-muted-foreground hover:border-solid hover:text-foreground"
+                onClick={() => {
+                  setQ('')
+                  setStatus('all')
+                  setPaymentStatus('all')
+                  setFrom('')
+                  setTo('')
+                }}
+              >
+                مسح التصفية
+              </Button>
+            )}
           </div>
-          <Select value={status} onValueChange={setStatus}>
-            <SelectTrigger aria-label="حالة الفاتورة">
-              <SelectValue placeholder={t('app.status')} />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="all">{t('app.all')}</SelectItem>
-              <SelectItem value="DRAFT">{purchaseStatusLabel('DRAFT', lang)}</SelectItem>
-              <SelectItem value="RECEIVED">{purchaseStatusLabel('RECEIVED', lang)}</SelectItem>
-              <SelectItem value="CANCELLED">{purchaseStatusLabel('CANCELLED', lang)}</SelectItem>
-            </SelectContent>
-          </Select>
-          <Select value={paymentStatus} onValueChange={setPaymentStatus}>
-            <SelectTrigger aria-label="حالة السداد">
-              <SelectValue placeholder="حالة السداد" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="all">كل حالات السداد</SelectItem>
-              <SelectItem value="UNPAID">غير مدفوعة</SelectItem>
-              <SelectItem value="PARTIAL">مدفوعة جزئياً</SelectItem>
-              <SelectItem value="PAID">مدفوعة بالكامل</SelectItem>
-            </SelectContent>
-          </Select>
-          <div className="flex items-center gap-2 sm:col-span-2 lg:col-span-2">
-            <Input type="date" value={from} onChange={(e) => setFrom(e.target.value)} aria-label="من تاريخ" className="qx-num" />
-            <span className="shrink-0 text-xs text-muted-foreground">{t('app.to')}</span>
-            <Input type="date" value={to} onChange={(e) => setTo(e.target.value)} aria-label="إلى تاريخ" className="qx-num" />
+          <div className="grid grid-cols-1 gap-3 border-t border-border/40 pt-3 sm:grid-cols-2 lg:grid-cols-4">
+            <div className="space-y-1.5">
+              <label className="block text-xs font-semibold text-muted-foreground">
+                {lang === 'ar' ? 'حالة الفاتورة' : t('app.status')}
+              </label>
+              <Select value={status} onValueChange={setStatus}>
+                <SelectTrigger className="h-9 w-full bg-background" aria-label="حالة الفاتورة">
+                  <SelectValue placeholder={lang === 'ar' ? 'حالة الفاتورة' : t('app.status')} />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">{lang === 'ar' ? 'كل الحالات' : t('app.all')}</SelectItem>
+                  <SelectItem value="DRAFT">{purchaseStatusLabel('DRAFT', lang)}</SelectItem>
+                  <SelectItem value="RECEIVED">{purchaseStatusLabel('RECEIVED', lang)}</SelectItem>
+                  <SelectItem value="CANCELLED">{purchaseStatusLabel('CANCELLED', lang)}</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="space-y-1.5">
+              <label className="block text-xs font-semibold text-muted-foreground">
+                حالة السداد
+              </label>
+              <Select value={paymentStatus} onValueChange={setPaymentStatus}>
+                <SelectTrigger className="h-9 w-full bg-background" aria-label="حالة السداد">
+                  <SelectValue placeholder="حالة السداد" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">كل حالات السداد</SelectItem>
+                  <SelectItem value="UNPAID">غير مدفوعة</SelectItem>
+                  <SelectItem value="PARTIAL">مدفوعة جزئياً</SelectItem>
+                  <SelectItem value="PAID">مدفوعة بالكامل</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="space-y-1.5">
+              <label className="block text-xs font-semibold text-muted-foreground">
+                {lang === 'ar' ? 'من تاريخ' : t('app.from')}
+              </label>
+              <Input
+                type="date"
+                value={from}
+                onChange={(e) => setFrom(e.target.value)}
+                aria-label="من تاريخ"
+                className="h-9 w-full bg-background qx-num text-xs"
+              />
+            </div>
+            <div className="space-y-1.5">
+              <label className="block text-xs font-semibold text-muted-foreground">
+                {lang === 'ar' ? 'إلى تاريخ' : t('app.to')}
+              </label>
+              <Input
+                type="date"
+                value={to}
+                onChange={(e) => setTo(e.target.value)}
+                aria-label="إلى تاريخ"
+                className="h-9 w-full bg-background qx-num text-xs"
+              />
+            </div>
           </div>
         </div>
       </SectionCard>

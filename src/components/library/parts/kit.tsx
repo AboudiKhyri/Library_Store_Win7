@@ -12,6 +12,7 @@ import { cn } from '@/lib/utils'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Skeleton } from '@/components/ui/skeleton'
+import { Spinner, ProgressBar } from '@/components/ui/spinner'
 import { AlertTriangle, Inbox, RefreshCw } from 'lucide-react'
 import {
   AlertDialog,
@@ -134,11 +135,8 @@ export function StatCard({
 
 export function LoadingBlock({ rows = 4, label }: { rows?: number; label?: string }) {
   return (
-    <div className="space-y-3" role="status" aria-busy="true" aria-label={label ?? 'loading'}>
-      <Skeleton className="h-10 w-full" />
-      {Array.from({ length: rows }).map((_, i) => (
-        <Skeleton key={i} className="h-12 w-full" />
-      ))}
+    <div className="flex flex-col items-center justify-center p-8 space-y-3 min-h-[220px]" role="status" aria-busy="true" aria-label={label ?? 'جاري التحميل...'}>
+      <ProgressBar label={label ?? 'جاري التحميل'} />
     </div>
   )
 }
@@ -221,7 +219,12 @@ export function ConfirmDialog({
             }}
             disabled={pending}
           >
-            {pending ? 'جارٍ التنفيذ...' : confirmLabel}
+            {pending ? (
+              <span className="inline-flex items-center gap-1.5">
+                <Spinner size="sm" />
+                <span>جارٍ التنفيذ...</span>
+              </span>
+            ) : confirmLabel}
           </AlertDialogAction>
         </AlertDialogFooter>
       </AlertDialogContent>
@@ -316,7 +319,7 @@ export function DataTable<T>({
             <TableRow
               key={i}
               className={cn(
-                'transition-colors hover:bg-primary/[0.04]',
+                'transition-colors hover:bg-primary/5',
                 i % 2 === 1 && 'bg-muted/30',
                 onRowClick && 'cursor-pointer'
               )}
@@ -417,3 +420,5 @@ export function Kbd({ children }: { children: ReactNode }) {
 export type ActionButtonProps = ButtonHTMLAttributes<HTMLButtonElement> & { variant?: never }
 
 export { PermanentDeleteDialog, type PermanentDeleteDialogProps } from './permanent-delete-dialog'
+
+export { Spinner, type SpinnerProps, ProgressBar, type ProgressBarProps } from '@/components/ui/spinner'

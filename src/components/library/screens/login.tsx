@@ -13,6 +13,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Alert, AlertDescription } from '@/components/ui/alert'
+import { Spinner } from '@/components/ui/spinner'
 import { Lock, User, Loader2, LogIn, AlertTriangle, Eye, EyeOff, Store } from 'lucide-react'
 import type { SessionUser } from '@/lib/library/types'
 
@@ -207,7 +208,7 @@ export function LoginScreen() {
               >
                 {pending ? (
                   <>
-                    <Loader2 className="me-2 h-5 w-5 animate-spin" />
+                    <Spinner size="sm" className="me-2" />
                     <span>جارٍ تسجيل الدخول...</span>
                   </>
                 ) : (
@@ -222,7 +223,7 @@ export function LoginScreen() {
         </Card>
 
         <p className="mt-6 flex items-center justify-center gap-1.5 text-center text-[11px] text-muted-foreground">
-          Library Store v{status?.version ?? '1.0.0'}
+          Library Store v{status?.version ?? '1.0.1'}
         </p>
       </div>
     </div>

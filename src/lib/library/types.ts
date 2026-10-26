@@ -382,7 +382,7 @@ export interface Paged<T> {
   pageSize: number
 }
 
-export const APP_VERSION = '1.0.0'
+export const APP_VERSION = '1.0.1'
 export const APP_BUILD = '2026092201'
 export const VENDOR = {
   company: 'Library Store',

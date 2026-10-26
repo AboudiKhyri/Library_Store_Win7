@@ -65,7 +65,7 @@ import {
   Printer,
 } from 'lucide-react'
 import { BarcodeSvg } from '../parts/barcode'
-import { generateUniqueBarcode } from '@/lib/library/barcode-gen'
+import { generateUniqueBarcode, generateBarcodeFromNameAndPrice, generateQrFromNameAndPrice } from '@/lib/library/barcode-gen'
 import { BarcodeScannerDialog } from '../parts/barcode-scanner-dialog'
 import { BarcodeLabelsSheet, type LabelRow, type LabelSize } from '../parts/barcode-labels'
 
@@ -162,6 +162,7 @@ export function ProductsScreen() {
   const money = useLibraryStore((s) => s.money)
   const has = useLibraryStore((s) => s.has)
   const status = useLibraryStore((s) => s.status)
+  const warningDays = Number(status?.inventory?.expiryWarningDays) || 30
   const { toast } = useToast()
 
   const canCreate = has('PRODUCT_CREATE')
@@ -350,6 +351,11 @@ export function ProductsScreen() {
       } else {
         toast({ title: 'تم حذف الصنف نهائياً' })
       }
+      setSelected((prev) => {
+        const next = new Set(prev)
+        next.delete(target.id)
+        return next
+      })
       setDeleteTarget(null)
       setDeleteSalesOption(false)
       reload()
@@ -539,7 +545,7 @@ export function ProductsScreen() {
       {/* bulk selection action bar */}
       {selected.size > 0 && canEdit && (
         <div
-          className="sticky top-0 z-20 flex flex-wrap items-center gap-2 rounded-xl border border-primary/30 bg-primary/[0.08] px-4 py-2.5 backdrop-blur"
+          className="sticky top-0 z-20 flex flex-wrap items-center gap-2 rounded-xl border border-primary/30 bg-primary/10 px-4 py-2.5 backdrop-blur"
           role="toolbar"
           aria-label="إجراءات جماعية"
         >
@@ -743,7 +749,7 @@ export function ProductsScreen() {
 
       {/* barcode labels dialog */}
       <Dialog open={labelsOpen} onOpenChange={setLabelsOpen}>
-        <DialogContent className="qx-scroll max-h-[90vh] overflow-y-auto sm:max-w-2xl">
+        <DialogContent className="qx-scroll max-h-[90vh] overflow-y-auto overflow-x-hidden sm:max-w-2xl">
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2">
               <Barcode className="h-5 w-5 text-primary" />
@@ -803,10 +809,10 @@ export function ProductsScreen() {
           </div>
 
           {/* live preview (screen) */}
-          <div className="rounded-xl border bg-muted/30 p-3">
+          <div className="barcode-preview-card rounded-xl border bg-muted/30 p-3">
             <p className="mb-2 text-[11px] font-semibold text-muted-foreground">معاينة الورقة (تُطبع بالأبيض والأسود)</p>
-            <div className="qx-scroll max-h-56 overflow-auto rounded-lg bg-white p-2">
-              <div className="origin-top scale-[0.85] sm:scale-90">
+            <div className="barcode-preview-scroll qx-scroll rounded-lg border border-border/40 bg-white p-2">
+              <div className="barcode-preview-inner origin-top">
                 <BarcodeLabelsSheet
                   rows={
                     (labelSelection === 'all'
@@ -1058,6 +1064,7 @@ interface ProductFormValues {
   unit: string
   packSize: string
   isWeighable: boolean
+  initialStock: string
   purchasePrice: string
   sellingPrice: string
   minSellingPrice: string
@@ -1079,6 +1086,7 @@ function emptyForm(): ProductFormValues {
     unit: 'piece',
     packSize: '1',
     isWeighable: false,
+    initialStock: '',
     purchasePrice: '0',
     sellingPrice: '',
     minSellingPrice: '',
@@ -1101,6 +1109,7 @@ function rowToForm(row: ProductRow): ProductFormValues {
     unit: row.unit,
     packSize: String(row.packSize),
     isWeighable: !!row.isWeighable,
+    initialStock: '',
     purchasePrice: String(row.purchasePrice),
     sellingPrice: String(row.sellingPrice),
     minSellingPrice: row.minSellingPrice != null ? String(row.minSellingPrice) : '',
@@ -1120,6 +1129,32 @@ function parseNumber(value: string, label: string, opts: { min?: number; max?: n
   if (opts.min != null && n < opts.min) return `${label} لا يمكن أن يكون أقل من ${opts.min}`
   if (opts.max != null && n > opts.max) return `${label} لا يمكن أن يتجاوز ${opts.max}`
   return n
+}
+
+function computeNextSku(existingProducts?: { sku?: string }[]): string {
+  const existingSet = new Set<string>()
+  const seqNums: number[] = []
+  ;(existingProducts || []).forEach((p) => {
+    if (p && p.sku) {
+      const s = String(p.sku).trim()
+      existingSet.add(s.toUpperCase())
+      const m = s.match(/^SKU-(\d+)$/i)
+      if (m) {
+        const val = parseInt(m[1], 10)
+        if (val > 0 && val < 500000) seqNums.push(val)
+      }
+    }
+  })
+  let nextNum = 1
+  if (seqNums.length > 0) {
+    nextNum = Math.max(...seqNums) + 1
+  }
+  let candidate = `SKU-${String(nextNum).padStart(4, '0')}`
+  while (existingSet.has(candidate.toUpperCase())) {
+    nextNum++
+    candidate = `SKU-${String(nextNum).padStart(4, '0')}`
+  }
+  return candidate
 }
 
 function ProductFormDialog({
@@ -1157,17 +1192,123 @@ function ProductFormDialog({
   const [overwriteConfirmOpen, setOverwriteConfirmOpen] = useState(false)
   const unitOptions = units.length > 0 ? units : ([...DEFAULT_UNITS] as string[])
 
-  const executeBarcodeGeneration = () => {
+    const handleAutoSku = () => {
+    try {
+      const fallbackSku = computeNextSku(existingProducts)
+      set('sku', fallbackSku)
+      api<{ nextSku: string }>('/products/next-sku')
+        .then((r) => {
+          if (r?.nextSku) {
+            set('sku', r.nextSku)
+            toast({
+              title: isAr ? 'تم توليد كود SKU تلقائياً' : 'SKU generated successfully',
+              description: r.nextSku,
+            })
+          }
+        })
+        .catch(() => {
+          toast({
+            title: isAr ? 'تم توليد كود SKU تلقائياً' : 'SKU generated successfully',
+            description: fallbackSku,
+          })
+        })
+    } catch (err) {
+      toast({
+        variant: 'destructive',
+        title: isAr ? 'تعذر توليد كود SKU' : 'Failed to generate SKU',
+        description: errMessage(err),
+      })
+    }
+  }
+
+  const handleQrExtracted = (scanned: string) => {
+    setScannerOpen(false)
+    const trimmed = (scanned || '').trim()
+    if (!trimmed) return
+
+    // 1. Try parsing structured JSON
+    if ((trimmed.startsWith('{') && trimmed.endsWith('}')) || (trimmed.startsWith('[') && trimmed.endsWith(']'))) {
+      try {
+        const data = JSON.parse(trimmed)
+        const updates: Partial<ProductFormValues> = {}
+        if (data.nameAr || data.name || data.title) updates.nameAr = String(data.nameAr || data.name || data.title)
+        if (data.nameEn || data.titleEn) updates.nameEn = String(data.nameEn || data.titleEn)
+        if (data.genericName || data.generic) updates.genericName = String(data.genericName || data.generic)
+        if (data.manufacturer || data.brand) updates.manufacturer = String(data.manufacturer || data.brand)
+        if (data.sku || data.code || data.id) updates.sku = String(data.sku || data.code || data.id)
+        if (data.barcode) updates.barcode = String(data.barcode)
+        if (data.sellingPrice ?? data.price) updates.sellingPrice = Number(data.sellingPrice ?? data.price)
+        if (data.purchasePrice ?? data.cost) updates.purchasePrice = Number(data.purchasePrice ?? data.cost)
+        if (data.minSellingPrice ?? data.minPrice) updates.minSellingPrice = Number(data.minSellingPrice ?? data.minPrice)
+        if (data.notes ?? data.description) updates.notes = String(data.notes ?? data.description)
+        if (data.unit) updates.unit = String(data.unit)
+        if (data.packSize) updates.packSize = Number(data.packSize)
+
+        setForm((prev) => ({ ...prev, ...updates }))
+        toast({
+          title: isAr ? 'تم استخلاص بيانات الصنف من رمز QR بنجاح' : 'Product data extracted from QR successfully',
+          description: updates.nameAr || updates.sku || trimmed,
+        })
+        return
+      } catch {}
+    }
+
+    // 2. Try URL query parameters
+    if (trimmed.includes('?') || trimmed.includes('&') || trimmed.includes('=')) {
+      try {
+        const queryStr = trimmed.includes('?') ? trimmed.split('?')[1] : trimmed
+        const params = new URLSearchParams(queryStr)
+        const updates: Partial<ProductFormValues> = {}
+        if (params.get('name') || params.get('nameAr')) updates.nameAr = params.get('name') || params.get('nameAr')!
+        if (params.get('nameEn')) updates.nameEn = params.get('nameEn')!
+        if (params.get('sku')) updates.sku = params.get('sku')!
+        if (params.get('barcode')) updates.barcode = params.get('barcode')!
+        if (params.get('price')) updates.sellingPrice = parseFloat(params.get('price')!)
+        if (params.get('cost')) updates.purchasePrice = parseFloat(params.get('cost')!)
+        if (Object.keys(updates).length > 0) {
+          setForm((prev) => ({ ...prev, ...updates }))
+          toast({
+            title: isAr ? 'تم استخلاص بيانات الصنف من الرابط بنجاح' : 'Product data extracted successfully',
+            description: updates.nameAr || updates.sku || trimmed,
+          })
+          return
+        }
+      } catch {}
+    }
+
+    // 3. Fallback: single code / number
+    setForm((prev) => ({
+      ...prev,
+      sku: prev.sku && prev.sku.trim() !== '' ? prev.sku : trimmed,
+      barcode: trimmed,
+    }))
+    toast({
+      title: isAr ? 'تم مسح رمز QR بنجاح' : 'QR code scanned successfully',
+      description: trimmed,
+    })
+  }
+
+  const handleGenerateBarcode = () => {
+    if (!form.nameAr.trim()) {
+      toast({
+        variant: 'destructive',
+        title: isAr ? 'يرجى إدخال اسم الصنف أولاً' : 'Please enter product name first',
+        description: isAr ? 'يتم إنشاء الباركود بناءً على اسم الصنف وسعر البيع' : 'Barcode is generated based on product name and price',
+      })
+      const el = document.getElementById('pf-nameAr')
+      if (el) el.focus()
+      return
+    }
     try {
       const knownBarcodes = new Set<string>()
       existingProducts.forEach((p) => {
         if (p.barcode) knownBarcodes.add(p.barcode)
       })
-      const generated = generateUniqueBarcode(knownBarcodes)
+      const generated = generateBarcodeFromNameAndPrice(form.nameAr, form.sellingPrice, knownBarcodes)
       set('barcode', generated)
       toast({
-        title: isAr ? 'تم توليد باركود عشوائي بنجاح' : 'Random barcode generated',
-        description: generated,
+        title: isAr ? 'تم إنشاء كود الباركود بنجاح' : 'Barcode generated successfully',
+        description: `${form.nameAr} (${form.sellingPrice ? form.sellingPrice + ' ج.م' : 'بدون سعر'}) → ${generated}`,
       })
     } catch (err) {
       toast({
@@ -1178,17 +1319,48 @@ function ProductFormDialog({
     }
   }
 
-  const handleGenerateBarcode = () => {
-    if (form.barcode && form.barcode.trim() !== '') {
-      setOverwriteConfirmOpen(true)
+  const handleGenerateQr = () => {
+    if (!form.nameAr.trim()) {
+      toast({
+        variant: 'destructive',
+        title: isAr ? 'يرجى إدخال اسم الصنف أولاً' : 'Please enter product name first',
+        description: isAr ? 'يتم إنشاء رمز QR بناءً على اسم الصنف وسعر البيع' : 'QR code is generated based on product name and price',
+      })
+      const el = document.getElementById('pf-nameAr')
+      if (el) el.focus()
       return
     }
-    executeBarcodeGeneration()
+    try {
+      const generated = generateQrFromNameAndPrice(form.nameAr, form.sellingPrice, form.sku)
+      set('barcode', generated)
+      toast({
+        title: isAr ? 'تم إنشاء كود QR بنجاح' : 'QR code generated successfully',
+        description: `${form.nameAr} (${form.sellingPrice ? form.sellingPrice + ' ج.م' : 'بدون سعر'}) → ${generated}`,
+      })
+    } catch (err) {
+      toast({
+        variant: 'destructive',
+        title: isAr ? 'تعذر توليد كود QR' : 'Failed to generate QR',
+        description: errMessage(err),
+      })
+    }
   }
 
   useEffect(() => {
     if (open) {
-      setForm(editing ? rowToForm(editing) : emptyForm())
+      if (editing) {
+        setForm(rowToForm(editing))
+      } else {
+        const initialSku = computeNextSku(existingProducts)
+        setForm({ ...emptyForm(), sku: initialSku })
+        api<{ nextSku: string }>('/products/next-sku')
+          .then((r) => {
+            if (r?.nextSku) {
+              setForm((f) => (!f.sku || f.sku.startsWith('SKU-') ? { ...f, sku: r.nextSku } : f))
+            }
+          })
+          .catch(() => {})
+      }
       setFormError(null)
     }
   }, [open, editing])
@@ -1214,6 +1386,17 @@ function ProductFormDialog({
     if (typeof reorder === 'string') return setFormError(reorder)
     const tax = parseNumber(form.taxRate, 'نسبة الضريبة', { min: 0, max: 100 })
     if (typeof tax === 'string') return setFormError(tax)
+
+    let initialQty = 0
+    if (!editing && form.initialStock.trim() !== '') {
+      const parsed = parseNumber(form.initialStock, 'العدد المبدئي الموجود في المخزن', {
+        min: 0,
+        max: 10_000_000,
+        int: !form.isWeighable,
+      })
+      if (typeof parsed === 'string') return setFormError(parsed)
+      initialQty = parsed
+    }
 
     // weighable products should use weight/volume units (advisory)
     if (form.isWeighable && !WEIGHT_UNITS.has(form.unit)) {
@@ -1244,6 +1427,7 @@ function ProductFormDialog({
       minSellingPrice: minSelling,
       taxRate: tax,
       reorderLevel: reorder,
+      initialStock: !editing && initialQty > 0 ? initialQty : 0,
       active: form.active,
       notes: form.notes.trim() || null,
     }
@@ -1305,7 +1489,7 @@ function ProductFormDialog({
             </Label>
             <Input id="pf-nameEn" value={form.nameEn} onChange={(e) => set('nameEn', e.target.value)} dir="ltr" />
           </div>
-          <div className="space-y-1.5">
+          <div className="space-y-1.5 sm:col-span-2">
             <Label htmlFor="pf-generic">
               {t('products.generic')} <span className="text-muted-foreground">({t('app.optional')})</span>
             </Label>
@@ -1314,25 +1498,42 @@ function ProductFormDialog({
               value={form.genericName}
               onChange={(e) => set('genericName', e.target.value)}
               placeholder="النوع / التفصيل — مثل: فاخر"
-              dir="ltr"
+              dir="auto"
             />
-          </div>
-          <div className="space-y-1.5">
-            <Label htmlFor="pf-manufacturer">
-              {t('products.manufacturer')} <span className="text-muted-foreground">({t('app.optional')})</span>
-            </Label>
-            <Input id="pf-manufacturer" value={form.manufacturer} onChange={(e) => set('manufacturer', e.target.value)} dir="auto" />
           </div>
           <div className="space-y-1.5">
             <Label htmlFor="pf-sku">{t('products.sku')} *</Label>
-            <Input
-              id="pf-sku"
-              value={form.sku}
-              onChange={(e) => set('sku', e.target.value)}
-              placeholder="SKU-001"
-              className="font-mono"
-              dir="ltr"
-            />
+            <div className="flex items-center gap-2">
+              <Input
+                id="pf-sku"
+                value={form.sku}
+                onChange={(e) => set('sku', e.target.value)}
+                placeholder="SKU-0001"
+                className="font-mono flex-1 h-11"
+                dir="ltr"
+                disabled={!canMutate}
+              />
+              <button
+                type="button"
+                onClick={handleAutoSku}
+                disabled={!canMutate}
+                aria-label={isAr ? 'توليد كود SKU تلقائي' : 'Auto-fill SKU code'}
+                title={isAr ? 'توليد كود SKU تلقائي' : 'Auto-fill SKU code'}
+                className="btn-barcode-generate h-11 w-11 rounded-xl shrink-0 cursor-pointer"
+              >
+                <Barcode className="h-5 w-5" />
+              </button>
+              <button
+                type="button"
+                onClick={() => setScannerOpen(true)}
+                disabled={!canMutate}
+                aria-label={isAr ? 'قراءة QR من المنتج واستخلاص البيانات' : 'Scan QR & Extract Data'}
+                title={isAr ? 'قراءة QR من المنتج واستخلاص البيانات' : 'Scan QR & Extract Data'}
+                className="btn-barcode-scan h-11 w-11 rounded-xl shrink-0 cursor-pointer"
+              >
+                <QrCode className="h-5 w-5" />
+              </button>
+            </div>
           </div>
           <div className="space-y-1.5">
             <Label htmlFor="pf-barcode">
@@ -1361,10 +1562,10 @@ function ProductFormDialog({
               </button>
               <button
                 type="button"
-                onClick={() => setScannerOpen(true)}
+                onClick={handleGenerateQr}
                 disabled={!canMutate}
-                aria-label={isAr ? 'مسح باركود / QR' : 'Scan Barcode / QR'}
-                title={isAr ? 'مسح باركود / QR' : 'Scan Barcode / QR'}
+                aria-label={isAr ? 'إنشاء كود QR مبني على اسم الصنف والسعر' : 'Generate QR Code based on Name & Price'}
+                title={isAr ? 'إنشاء كود QR مبني على اسم الصنف والسعر' : 'Generate QR Code based on Name & Price'}
                 className="btn-barcode-scan h-11 w-11 rounded-xl shrink-0 cursor-pointer"
               >
                 <QrCode className="h-5 w-5" />
@@ -1381,59 +1582,81 @@ function ProductFormDialog({
               </div>
             )}
           </div>
-          <div className="space-y-1.5">
-            <Label>{t('products.category')}</Label>
-            <Select value={form.categoryId} onValueChange={(v) => set('categoryId', v)}>
-              <SelectTrigger aria-label={t('products.category')}>
-                <SelectValue placeholder={t('products.category')} />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="none">بدون تصنيف</SelectItem>
-                {(categories ?? []).map((c) => (
-                  <SelectItem key={c.id} value={c.id}>
-                    {c.nameAr}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </div>
-          <div className="space-y-1.5">
-            <Label>{t('products.unit')}</Label>
-            <Select value={form.unit} onValueChange={(v) => set('unit', v)}>
-              <SelectTrigger aria-label={t('products.unit')}>
-                <SelectValue placeholder={t('products.unit')} />
-              </SelectTrigger>
-              <SelectContent>
-                {unitOptions.map((u) => (
-                  <SelectItem key={u} value={u}>
-                    {unitLabel(u, lang)}
-                  </SelectItem>
-                ))}
-                {/* keep legacy/custom units selectable so existing rows stay editable */}
-                {!unitOptions.includes(form.unit) && form.unit && (
-                  <SelectItem value={form.unit}>{form.unit}</SelectItem>
-                )}
-              </SelectContent>
-            </Select>
+          <div className="grid grid-cols-2 gap-2">
+            <div className="space-y-1.5">
+              <Label>{t('products.category')}</Label>
+              <Select value={form.categoryId} onValueChange={(v) => set('categoryId', v)}>
+                <SelectTrigger aria-label={t('products.category')}>
+                  <SelectValue placeholder={t('products.category')} />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="none">بدون تصنيف</SelectItem>
+                  {(categories ?? []).map((c) => (
+                    <SelectItem key={c.id} value={c.id}>
+                      {c.nameAr}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="space-y-1.5">
+              <Label>{t('products.unit')}</Label>
+              <Select value={form.unit} onValueChange={(v) => set('unit', v)}>
+                <SelectTrigger aria-label={t('products.unit')}>
+                  <SelectValue placeholder={t('products.unit')} />
+                </SelectTrigger>
+                <SelectContent>
+                  {unitOptions.map((u) => (
+                    <SelectItem key={u} value={u}>
+                      {unitLabel(u, lang)}
+                    </SelectItem>
+                  ))}
+                  {!unitOptions.includes(form.unit) && form.unit && (
+                    <SelectItem value={form.unit}>{form.unit}</SelectItem>
+                  )}
+                </SelectContent>
+              </Select>
+            </div>
           </div>
           {/* weighable (sold by weight) */}
           <div className="space-y-1.5">
             <Label>{t('products.weighable')}</Label>
-            <button
-              type="button"
-              role="switch"
-              aria-checked={form.isWeighable}
-              onClick={() => set('isWeighable', !form.isWeighable)}
+            <div
+              role="button"
+              tabIndex={0}
+              onClick={() => {
+                const next = !form.isWeighable
+                set('isWeighable', next)
+                if (next && form.unit === 'piece') set('unit', 'kg')
+                else if (!next && (form.unit === 'kg' || form.unit === 'g')) set('unit', 'piece')
+              }}
+              onKeyDown={(e) => {
+                if (e.key === ' ' || e.key === 'Enter') {
+                  e.preventDefault()
+                  const next = !form.isWeighable
+                  set('isWeighable', next)
+                  if (next && form.unit === 'piece') set('unit', 'kg')
+                  else if (!next && (form.unit === 'kg' || form.unit === 'g')) set('unit', 'piece')
+                }
+              }}
               className={
-                'flex min-h-11 w-full items-center justify-between gap-3 rounded-xl border p-3 text-start transition sm:min-h-[38px] ' +
+                'flex min-h-11 w-full items-center justify-between gap-3 rounded-xl border p-3 text-start transition cursor-pointer select-none sm:min-h-[38px] ' +
                 (form.isWeighable ? 'border-primary/50 bg-primary/10' : 'bg-muted/30 hover:bg-muted/50')
               }
             >
               <span className="text-sm font-medium">
                 {form.isWeighable ? 'نعم — كميات كسرية في نقطة البيع' : 'لا — كميات صحيحة'}
               </span>
-              <Switch checked={form.isWeighable} onCheckedChange={(v) => set('isWeighable', v)} />
-            </button>
+              <Switch
+                checked={form.isWeighable}
+                onCheckedChange={(v) => {
+                  set('isWeighable', v)
+                  if (v && form.unit === 'piece') set('unit', 'kg')
+                  else if (!v && (form.unit === 'kg' || form.unit === 'g')) set('unit', 'piece')
+                }}
+                onClick={(e) => e.stopPropagation()}
+              />
+            </div>
             {form.isWeighable && (
               <p className="text-[11px] text-muted-foreground">{t('products.weighableHint')}</p>
             )}
@@ -1449,7 +1672,12 @@ function ProductFormDialog({
             />
           </div>
           <div className="space-y-1.5">
-            <Label htmlFor="pf-reorder">{t('products.reorderLevel')}</Label>
+            <Label htmlFor="pf-reorder">
+              {t('products.reorderLevel')}{' '}
+              <span className="text-[11px] font-normal text-muted-foreground">
+                ({isAr ? 'إشعار بأن هذا الصنف انخفض من المخزون' : 'alert when stock is low'})
+              </span>
+            </Label>
             <Input
               id="pf-reorder"
               value={form.reorderLevel}
@@ -1458,6 +1686,23 @@ function ProductFormDialog({
               inputMode="numeric"
             />
           </div>
+          {!editing && (
+            <div className="space-y-1.5">
+              <Label htmlFor="pf-initialStock">
+                {isAr ? 'العدد المبدئي الموجود في المخزن' : 'Initial Stock Quantity'}{' '}
+                <span className="text-muted-foreground">({t('app.optional')})</span>
+              </Label>
+              <Input
+                id="pf-initialStock"
+                value={form.initialStock}
+                onChange={(e) => set('initialStock', e.target.value)}
+                placeholder="0"
+                className={numInputCls}
+                inputMode={form.isWeighable ? 'decimal' : 'numeric'}
+                disabled={!canMutate}
+              />
+            </div>
+          )}
           <div className="space-y-1.5">
             <Label htmlFor="pf-purchase">{t('products.purchasePrice')}</Label>
             <Input
@@ -1479,22 +1724,10 @@ function ProductFormDialog({
             />
           </div>
           <div className="space-y-1.5">
-            <Label htmlFor="pf-min">
-              {t('products.minPrice')} <span className="text-muted-foreground">({t('app.optional')})</span>
-            </Label>
-            <Input
-              id="pf-min"
-              value={form.minSellingPrice}
-              onChange={(e) => set('minSellingPrice', e.target.value)}
-              className={numInputCls}
-              inputMode="decimal"
-            />
-          </div>
-          <div className="space-y-1.5">
             <Label htmlFor="pf-tax">{t('products.taxRate')}</Label>
             <Input id="pf-tax" value={form.taxRate} onChange={(e) => set('taxRate', e.target.value)} className={numInputCls} inputMode="decimal" />
           </div>
-          <div className="flex items-center justify-between rounded-xl border px-3 py-2.5 sm:col-span-1">
+          <div className="flex items-center justify-between rounded-xl border px-3 py-2.5 sm:col-span-2">
             <div>
               <Label htmlFor="pf-active" className="cursor-pointer">
                 {t('app.status')}
@@ -1525,14 +1758,7 @@ function ProductFormDialog({
       <BarcodeScannerDialog
         open={scannerOpen}
         onOpenChange={setScannerOpen}
-        onScan={(scanned) => {
-          set('barcode', scanned)
-          setScannerOpen(false)
-          toast({
-            title: isAr ? 'تم مسح الباركود بنجاح' : 'Barcode scanned successfully',
-            description: scanned,
-          })
-        }}
+        onScan={handleQrExtracted}
         currentProductId={editing?.id}
         existingProducts={existingProducts}
         onOpenExistingProduct={(dupId) => {

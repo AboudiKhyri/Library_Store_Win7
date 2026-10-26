@@ -59,11 +59,12 @@ app.use(express.urlencoded({ extended: true }));
 // ─── CORS for local development ────────────────────────────────────────────────
 app.use((req, res, next) => {
   const origin = req.headers.origin || '';
-  if (!origin || /^https?:\/\/(localhost|127\.0\.0\.1)(:\d+)?$/.test(origin) || origin === 'null') {
-    res.set('Access-Control-Allow-Origin', origin || '*');
+  const isLoopback = origin && (/^https?:\/\/(localhost|127\.0\.0\.1)(:\d+)?$/.test(origin) || origin === 'null' || origin.startsWith('file://') || origin.startsWith('vscode-webview://'));
+  if (isLoopback) {
+    res.set('Access-Control-Allow-Origin', origin);
     res.set('Access-Control-Allow-Credentials', 'true');
     res.set('Access-Control-Allow-Methods', 'GET,POST,PUT,PATCH,DELETE,OPTIONS');
-    res.set('Access-Control-Allow-Headers', 'Content-Type,Authorization,Cookie');
+    res.set('Access-Control-Allow-Headers', 'Content-Type,Authorization,Cookie,X-Requested-With');
   }
   if (req.method === 'OPTIONS') return res.status(204).end();
   next();
@@ -78,13 +79,22 @@ if (clientDir) {
   console.log('[BOOT] Serving static client from:', clientDir);
   app.use(express.static(clientDir, {
     index: false,  // handle manually for SPA fallback
-    maxAge: '1d',
-    immutable: true,
+    maxAge: 0,
+    etag: false,
+    lastModified: false,
+    setHeaders: (res) => {
+      res.setHeader('Cache-Control', 'no-cache, no-store, must-revalidate');
+      res.setHeader('Pragma', 'no-cache');
+      res.setHeader('Expires', '0');
+    },
     // Next.js _next/static files are content-hashed and can be cached aggressively
   }));
 
   // SPA fallback: serve index.html for all non-API, non-static routes
   app.get('*', (req, res) => {
+    res.setHeader('Cache-Control', 'no-cache, no-store, must-revalidate');
+    res.setHeader('Pragma', 'no-cache');
+    res.setHeader('Expires', '0');
     // Try to find the page's specific HTML file (Next.js static export generates /page/index.html)
     const candidates = [
       path.join(clientDir, req.path, 'index.html'),
@@ -102,15 +112,16 @@ if (clientDir) {
 } else {
   console.warn('[BOOT] No client directory found — API-only mode');
   app.get('/', (req, res) => {
-    res.json({ ok: true, message: 'Library Store API Server', version: '1.0.0' });
+    res.json({ ok: true, message: 'Library Store API Server', version: '1.0.1' });
   });
 }
 
 // ─── Start server ──────────────────────────────────────────────────────────────
 // ─── Startup Session Invalidation ─────────────────────────────────────────────
 try {
-  const { getSettings, openDb } = require('./db');
+  const { getSettings, openDb, syncThemeFile } = require('./db');
   const settings = getSettings('default');
+  try { if (typeof syncThemeFile === 'function') syncThemeFile(settings); } catch (_) {}
   if (settings.system?.requireLoginOnLaunch !== false) {
     const db = openDb();
     const res = db.prepare('DELETE FROM Session').run();
@@ -148,6 +159,17 @@ function gracefulShutdown(code = 0) {
     process.exit(code);
   }
 }
+
+app.post('/api/library/system/shutdown', (req, res) => {
+  res.json({ ok: true, message: 'Server shutting down cleanly' });
+  setTimeout(() => gracefulShutdown(0), 100);
+});
+
+process.on('message', (msg) => {
+  if (msg === 'shutdown' || (msg && msg.type === 'shutdown')) {
+    gracefulShutdown(0);
+  }
+});
 
 process.on('SIGTERM', () => gracefulShutdown(0));
 process.on('SIGINT', () => gracefulShutdown(0));

@@ -345,11 +345,11 @@ export const dict: Record<string, Entry> = {
   'inv.value': { ar: 'القيمة', en: 'Value' },
   'inv.type': { ar: 'نوع الحركة', en: 'Movement type' },
   'inv.emptyTitle': { ar: 'لا توجد بيانات مخزون', en: 'No inventory data' },
-  'inv.fefo': { ar: 'FIFO — الأقدم وصولاً يصرف أولاً', en: 'FIFO — First In, First Out' },
-  'inv.fifo': { ar: 'FIFO — الأقدم وصولاً يصرف أولاً', en: 'FIFO — First In, First Out' },
-  'inv.writeoffConfirm': { ar: 'سيتم إخراج الكمية من المخزون وتسجيلها كإعدام. متابعة؟', en: 'Quantity will be removed from stock and logged as write-off. Continue?' },
-  'inv.sweep': { ar: 'تحديث حالات الصلاحية', en: 'Refresh expiry statuses' },
-  'inv.sweepDone': { ar: 'تم تحديث حالات الصلاحية', en: 'Expiry statuses refreshed' },
+  'inv.fefo': { ar: 'متابعة وإدارة كميات الأصناف وحركات المخزون', en: 'FIFO — First In, First Out' },
+  'inv.fifo': { ar: 'متابعة وإدارة كميات الأصناف وحركات المخزون', en: 'FIFO — First In, First Out' },
+  'inv.writeoffConfirm': { ar: 'سيتم إخراج الكمية من المخزون وتسجيلها كتسوية. متابعة؟', en: 'Quantity will be removed from stock and logged as write-off. Continue?' },
+  'inv.sweep': { ar: 'تحديث الحالات', en: 'Refresh expiry statuses' },
+  'inv.sweepDone': { ar: 'تم تحديث الحالات', en: 'Expiry statuses refreshed' },
 
   // Stocktake
   'stocktake.title': { ar: 'جرد المخزون', en: 'Stocktaking' },
@@ -371,7 +371,7 @@ export const dict: Record<string, Entry> = {
   'reports.suppliers': { ar: 'تقرير الموردين', en: 'Supplier Report' },
   'reports.inventory': { ar: 'تقرير المخزون', en: 'Inventory Report' },
   'reports.lowStock': { ar: 'الأصناف المنخفضة', en: 'Low Stock Report' },
-  'reports.expiry': { ar: 'تقرير الصلاحية', en: 'Expiry Report' },
+  
   'reports.returns': { ar: 'تقرير المرتجعات', en: 'Returns Report' },
   'reports.movements': { ar: 'تقرير حركة الصنف', en: 'Stock Movement Report' },
   'reports.daily': { ar: 'المبيعات اليومية', en: 'Daily Sales' },

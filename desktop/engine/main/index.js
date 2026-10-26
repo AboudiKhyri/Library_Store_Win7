@@ -76,7 +76,7 @@ async function runDesktop(config) {
     // 3. Instantiate core modules
     const preloadPath = path.join(__dirname, '..', 'preload', 'index.js');
     const serverManager = new server_manager_1.ServerManager(config, paths, logger);
-    const windowManager = new window_manager_1.WindowManager(config, preloadPath, logger, serverManager);
+    const windowManager = new window_manager_1.WindowManager(config, preloadPath, logger, serverManager, paths);
     const lifecycle = new lifecycle_1.AppLifecycle(logger, serverManager, windowManager);
     const ipcRouter = new ipc_router_1.IpcRouter(config, paths, serverManager, windowManager, logger);
     // 4. Single-instance lock

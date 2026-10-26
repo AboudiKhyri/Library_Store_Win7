@@ -32,10 +32,10 @@ import type { LoyaltySettings,
   PosConfig,
 } from '@/lib/library/types'
 import {
+  RotateCcw,
   Building2,
   Palette,
   ShoppingCart,
-  Boxes,
   Printer,
   DatabaseBackup,
   Languages,
@@ -52,8 +52,8 @@ import {
   Lock,
 } from 'lucide-react'
 
-type SectionKey = 'business' | 'branding' | 'pos' | 'inventory' | 'hardware' | 'backup' | 'localization'
-type SaveKey = Exclude<SectionKey, 'inventory'>
+type SectionKey = 'business' | 'branding' | 'pos' | 'hardware' | 'backup' | 'localization'
+type SaveKey = SectionKey
 
 interface SettingsPayload {
   business: BusinessConfig
@@ -67,6 +67,70 @@ interface SettingsPayload {
 type LFn = (ar: string, en: string) => string
 
 const PAYMENT_PRESETS = ['cash', 'card', 'wallet'] as const
+
+
+const DEFAULT_SETTINGS: Record<SectionKey, any> = {
+  business: {
+    businessName: 'Library Store',
+    displayName: 'Library Store',
+    owner: '',
+    address: '',
+    phone: '',
+    phone2: '',
+    email: '',
+    taxId: '',
+    receiptHeader: '',
+    receiptFooter: '',
+    notes: '',
+  },
+  branding: {
+    primary: '#00c8e0',
+    primaryColor: '#00c8e0',
+    secondary: '#14b8a6',
+    accent: '#22d3ee',
+    appName: 'Library Store',
+    logoDataUrl: null,
+    defaultTheme: 'light',
+  },
+  pos: {
+    currency: 'EGP',
+    currencySymbol: 'ج.م',
+    allowDiscount: true,
+    maxDiscountPercent: 20,
+    lowStockThreshold: 5,
+    receiptCopies: 1,
+    defaultPaymentMethod: 'cash',
+    paymentMethods: ['cash', 'card', 'wallet'],
+    units: ['piece', 'kg', 'box', 'liter', 'pack', 'dozen'],
+    weightQtyDecimals: 3,
+    loyalty: {
+      enabled: false,
+      earnRatePer100: 5,
+      pointValueEgp: 1,
+      maxRedeemShare: 50,
+      minRedeemPoints: 10,
+    },
+  },
+  hardware: {
+    printerEnabled: false,
+    printerName: '',
+    paperWidth: 80,
+    scannerEnabled: true,
+    scannerSuffix: 'Enter',
+    scannerMinIntervalMs: 50,
+    cashDrawerEnabled: false,
+  },
+  backup: {
+    autoBackupEnabled: false,
+    intervalHours: 24,
+    retentionCount: 7,
+  },
+  localization: {
+    language: 'ar',
+    timezone: 'Africa/Cairo',
+    numberFormat: 'latn',
+  },
+}
 
 function snapshot(s: SettingsPayload): Record<SaveKey, string> {
   return {
@@ -100,7 +164,6 @@ export function SettingsScreen() {
   const canManage = has('SETTINGS_MANAGE')
   const canHardware = canManage && has('HARDWARE_MANAGE')
   const canBackup = has('BACKUP_MANAGE')
-  const canSweep = has('INVENTORY_ADJUST')
 
   const load = useCallback(async () => {
     setError(null)
@@ -137,7 +200,7 @@ export function SettingsScreen() {
       setCfg(updated)
       setSaved(snapshot(updated))
       toast({ title: t('settings.saved'), description: sectionName(key, L) })
-      if (key === 'branding' || key === 'localization' || key === 'pos') {
+      if (key === 'business' || key === 'branding' || key === 'localization' || key === 'pos') {
         await refreshStatus()
       }
       if (key === 'localization') {
@@ -172,11 +235,25 @@ export function SettingsScreen() {
     { key: 'business', label: t('settings.business'), icon: Building2 },
     { key: 'branding', label: t('settings.branding'), icon: Palette },
     { key: 'pos', label: t('settings.pos'), icon: ShoppingCart },
-    { key: 'inventory', label: t('settings.inventory'), icon: Boxes },
     { key: 'hardware', label: t('settings.hardware'), icon: Printer },
     { key: 'backup', label: t('settings.backup'), icon: DatabaseBackup },
     { key: 'localization', label: t('settings.localization'), icon: Languages },
   ]
+
+    const resetSection = (key: SectionKey) => {
+    if (!DEFAULT_SETTINGS[key]) return
+    setCfg((prev) => {
+      if (!prev) return prev
+      return {
+        ...prev,
+        [key]: JSON.parse(JSON.stringify(DEFAULT_SETTINGS[key])),
+      }
+    })
+    toast({
+      title: L('تمت استعادة الإعدادات الافتراضية', 'Default settings restored'),
+      description: L('تمت استعادة القيم الافتراضية لهذا القسم. اضغط "حفظ التغييرات" لتطبيقها.', 'Default values restored. Click "Save changes" to apply.'),
+    })
+  }
 
   const noPermHint = L('لا تملك صلاحية تعديل الإعدادات', 'No settings permission')
 
@@ -209,6 +286,7 @@ export function SettingsScreen() {
           <SaveRow
             disabled={!dirty.business || !canManage}
             saving={saving === 'business'}
+            onReset={() => resetSection('business')}
             onSave={() => void saveSection('business', { business: cfg.business })}
             hint={!canManage ? noPermHint : undefined}
             L={L}
@@ -220,6 +298,7 @@ export function SettingsScreen() {
           <SaveRow
             disabled={!dirty.branding || !canManage}
             saving={saving === 'branding'}
+            onReset={() => resetSection('branding')}
             onSave={() => void saveSection('branding', { branding: cfg.branding })}
             hint={!canManage ? noPermHint : undefined}
             L={L}
@@ -231,14 +310,11 @@ export function SettingsScreen() {
           <SaveRow
             disabled={!dirty.pos || !canManage}
             saving={saving === 'pos'}
+            onReset={() => resetSection('pos')}
             onSave={() => void saveSection('pos', { pos: cfg.pos })}
             hint={!canManage ? noPermHint : undefined}
             L={L}
           />
-        </TabsContent>
-
-        <TabsContent value="inventory" className="mt-4">
-          <InventorySection cfg={cfg} L={L} canSweep={canSweep} />
         </TabsContent>
 
         <TabsContent value="hardware" className="mt-4">
@@ -246,6 +322,7 @@ export function SettingsScreen() {
           <SaveRow
             disabled={!dirty.hardware || !canHardware}
             saving={saving === 'hardware'}
+            onReset={() => resetSection('hardware')}
             onSave={() => void saveSection('hardware', { hardware: cfg.hardware })}
             hint={!canHardware ? L('تعديل الأجهزة يتطلب صلاحية إدارة الأجهزة', 'Hardware manage permission required') : undefined}
             L={L}
@@ -257,6 +334,7 @@ export function SettingsScreen() {
           <SaveRow
             disabled={!dirty.backup || !canBackup}
             saving={saving === 'backup'}
+            onReset={() => resetSection('backup')}
             onSave={() => void saveSection('backup', { backup: cfg.backup })}
             hint={!canBackup ? L('يتطلب صلاحية إدارة النسخ الاحتياطية', 'Backup manage permission required') : undefined}
             L={L}
@@ -268,6 +346,7 @@ export function SettingsScreen() {
           <SaveRow
             disabled={!dirty.localization || !canManage}
             saving={saving === 'localization'}
+            onReset={() => resetSection('localization')}
             onSave={() => void saveSection('localization', { localization: cfg.localization, pos: { currencySymbol: cfg.pos.currencySymbol } })}
             hint={!canManage ? noPermHint : undefined}
             L={L}
@@ -284,18 +363,32 @@ function SaveRow({
   disabled,
   saving,
   onSave,
+  onReset,
   hint,
   L,
 }: {
   disabled: boolean
   saving: boolean
   onSave: () => void
+  onReset?: () => void
   hint?: string
   L: LFn
 }) {
   return (
     <div className="mt-4 flex flex-col items-stretch gap-2 sm:flex-row sm:items-center sm:justify-end">
       {hint && <p className="text-xs text-muted-foreground sm:me-auto">{hint}</p>}
+      {onReset && (
+        <Button
+          type="button"
+          variant="outline"
+          onClick={onReset}
+          disabled={saving}
+          className="min-h-11 sm:min-h-9 border-muted-foreground/30 hover:bg-muted"
+        >
+          <RotateCcw className="me-2 h-4 w-4" />
+          {L('إعادة التعيين', 'Reset')}
+        </Button>
+      )}
       <Button onClick={onSave} disabled={disabled || saving} className="min-h-11 sm:min-h-9">
         {saving ? <Loader2 className="me-2 h-4 w-4 animate-spin" /> : <Save className="me-2 h-4 w-4" />}
         {L('حفظ التغييرات', 'Save changes')}
@@ -413,7 +506,19 @@ function BrandingSection({
 }) {
   const fileRef = useRef<HTMLInputElement>(null)
   const [logoError, setLogoError] = useState<string | null>(null)
-  const br = cfg.branding
+  const br = {
+    primary: '#00c8e0',
+    secondary: '#14b8a6',
+    accent: '#22d3ee',
+    appName: 'Library Store',
+    logoDataUrl: null,
+    defaultTheme: 'dark' as const,
+    ...cfg.branding,
+    primary: cfg.branding?.primary || (cfg.branding as any)?.primaryColor || '#00c8e0',
+    secondary: cfg.branding?.secondary || '#14b8a6',
+    accent: cfg.branding?.accent || '#22d3ee',
+    logoDataUrl: cfg.branding?.logoDataUrl || (cfg.branding as any)?.logoUrl || null,
+  }
   const primaryContrast = getContrastInfo(br.primary)
 
   function onLogo(file: File | undefined) {
@@ -497,7 +602,11 @@ function BrandingSection({
         <div className="overflow-hidden rounded-xl border" style={{ ['--primary' as string]: br.primary, ['--secondary' as string]: br.secondary, ['--accent' as string]: br.accent }}>
           {/* mock header */}
           <div className="flex items-center gap-2 border-b bg-muted/40 px-3 py-2">
-            <span className="h-7 w-7 rounded-lg" style={{ background: br.primary }} />
+            {br.logoDataUrl ? (
+              <img src={br.logoDataUrl} alt="logo" className="h-7 w-7 rounded-lg object-contain bg-white p-0.5" />
+            ) : (
+              <span className="h-7 w-7 rounded-lg" style={{ background: br.primary }} />
+            )}
             <div className="leading-tight">
               <p className="text-xs font-bold">{cfg.business.displayName || cfg.business.businessName || L('اسم المتجر', 'Store name')}</p>
               <p className="text-[9px] text-muted-foreground">{L('تطبيق المعاينة', 'Preview app')}</p>
@@ -807,7 +916,7 @@ function PosSection({
       <Separator className="my-4" />
 
       {/* loyalty program (entitlement-driven — hidden config when unlicensed) */}
-      <div className={loyaltyLicensed ? 'rounded-xl border border-primary/25 bg-primary/[0.05] p-4' : 'rounded-xl border border-dashed bg-muted/20 p-4 opacity-70'}>
+      <div className={loyaltyLicensed ? 'rounded-xl border border-primary/25 bg-primary/5 p-4' : 'rounded-xl border border-dashed bg-muted/20 p-4 opacity-70'}>
         <div className="flex items-center justify-between gap-3">
           <div className="flex items-start gap-2">
             <Sparkles className="mt-0.5 h-4 w-4 shrink-0 text-primary" />
@@ -962,43 +1071,6 @@ function PosSection({
         </Field>
       </div>
     </SectionCard>
-  )
-}
-
-// ---------------- Inventory ----------------
-
-function InventorySection({
-  cfg,
-  L,
-  canSweep,
-}: {
-  cfg: SettingsPayload
-  L: LFn
-  canSweep: boolean
-}) {
-  const p = cfg.pos
-
-  return (
-    <div className="space-y-4">
-      <SectionCard
-        title={L('إعدادات المخزون الفعالة', 'Active inventory settings')}
-        description={L('تُدار من قسم نقطة البيع لتجنب الازدواجية', 'Managed in the POS section to avoid duplication')}
-      >
-        <div className="grid gap-3 sm:grid-cols-2">
-          <InfoTile
-            label={L('حد انخفاض المخزون', 'Low stock threshold')}
-            value={<span className="tabular-nums">{p.lowStockThreshold}</span>}
-          />
-        </div>
-        <p className="mt-3 text-[11px] text-muted-foreground">
-          {L(
-            'هذان الإعدادان مشتركان بين نقطة البيع والمخزون — عدّلهما من قسم «نقطة البيع».',
-            'These two settings are shared with POS — edit them in the POS section.'
-          )}
-        </p>
-      </SectionCard>
-
-    </div>
   )
 }
 

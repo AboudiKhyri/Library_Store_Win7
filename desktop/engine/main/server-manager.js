@@ -134,7 +134,7 @@ class ServerManager {
             this.child = (0, child_process_1.spawn)(this.paths.nodeExecutable, [this.paths.serverScript], {
                 cwd: this.paths.serverDir,
                 env,
-                stdio: ['ignore', 'pipe', 'pipe'],
+                stdio: ['ignore', 'pipe', 'pipe', 'ipc'],
                 windowsHide: true,
             });
         }
@@ -162,9 +162,14 @@ class ServerManager {
             this.lastAction = `Process error: ${err.message}`;
         });
         this.child.on('exit', (code, signal) => {
-            childExitedPrematurely = true;
+            const isClean = (code === 0 || code === null);
             this.exitCode = code !== null ? `Code ${code}` : `Signal ${signal}`;
-            this.logger.warn(`[BOOT] Server process exited (${this.exitCode})`);
+            if (isClean || this.isShuttingDown) {
+                this.logger.info(`[BOOT] Server process exited cleanly (${this.exitCode})`);
+            } else {
+                childExitedPrematurely = true;
+                this.logger.warn(`[BOOT] Server process exited unexpectedly (${this.exitCode})`);
+            }
             this.state = 'exited';
             this.lastAction = `Process terminated (${this.exitCode})`;
         });
@@ -290,9 +295,24 @@ class ServerManager {
      * Stops the server child process and kills the entire process tree.
      */
     stop() {
+        this.isShuttingDown = true;
         if (!this.child && !this.pid)
-            return;
+            return Promise.resolve();
         this.logger.info(`[BOOT] Stopping server process tree (PID: ${this.pid})...`);
+        if (this.assignedPort) {
+            try {
+                const req = http.request({
+                    hostname: '127.0.0.1',
+                    port: this.assignedPort,
+                    path: '/api/library/system/shutdown',
+                    method: 'POST',
+                    timeout: 1000
+                }, () => {});
+                req.on('error', () => {});
+                req.on('timeout', () => req.destroy());
+                req.end();
+            } catch { }
+        }
         if (this.pid) {
             this.terminatePid(this.pid);
         }
@@ -305,6 +325,7 @@ class ServerManager {
         }
         this.pid = null;
         this.state = 'not_started';
+        return Promise.resolve();
     }
 }
 exports.ServerManager = ServerManager;

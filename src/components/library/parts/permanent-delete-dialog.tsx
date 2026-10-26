@@ -41,8 +41,8 @@ export function PermanentDeleteDialog({
 }: PermanentDeleteDialogProps) {
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-md bg-[#131b26] border-[#223041] text-foreground p-0 overflow-hidden shadow-2xl">
-        <DialogHeader className="p-5 pb-4 border-b border-[#223041]">
+      <DialogContent className="sm:max-w-md p-0 overflow-hidden shadow-2xl">
+        <DialogHeader className="p-5 pb-4 border-b border-border">
           <DialogTitle className="flex items-center gap-2 text-destructive font-bold text-base sm:text-lg">
             <AlertTriangle className="h-5 w-5 text-destructive shrink-0" />
             تأكيد الحذف النهائي — {itemName}
@@ -62,7 +62,7 @@ export function PermanentDeleteDialog({
 
           {/* Optional Related Cascade Checkbox */}
           {checkboxLabel && (
-            <div className="flex items-start gap-3 rounded-lg border border-[#223041] p-3.5 bg-[#0e141c]">
+            <div className="flex items-start gap-3 rounded-lg border border-border p-3.5 bg-muted/40 transition-colors">
               <Checkbox
                 id="permanent-delete-related-checkbox"
                 checked={deleteRelatedOption}
@@ -86,9 +86,8 @@ export function PermanentDeleteDialog({
           )}
         </div>
 
-        <DialogFooter className="p-4 px-5 bg-muted/50 border-t border-border gap-2 sm:gap-2 justify-end">
+        <DialogFooter className="p-4 px-5 bg-muted/30 border-t border-border gap-2 sm:gap-2 justify-end">
           <Button
-            variant="outline"
             variant="outline"
             onClick={onCancel}
             disabled={isDeleting}
@@ -96,7 +95,6 @@ export function PermanentDeleteDialog({
             إلغاء
           </Button>
           <Button
-            variant="destructive"
             variant="destructive"
             onClick={onConfirm}
             disabled={isDeleting}

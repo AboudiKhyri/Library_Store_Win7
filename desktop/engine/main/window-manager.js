@@ -12,12 +12,56 @@ class WindowManager {
     preloadPath;
     logger;
     serverManager;
+    paths = null;
     mainWindow = null;
-    constructor(config, preloadPath, logger, serverManager) {
+    constructor(config, preloadPath, logger, serverManager, paths = null) {
         this.config = config;
         this.preloadPath = preloadPath;
         this.logger = logger;
         this.serverManager = serverManager;
+        this.paths = paths;
+    }
+    /**
+     * Resolves and parses the synchronized theme configuration.
+     * Guaranteed fast synchronous read (< 0.5ms) without native addon dependencies.
+     */
+    getThemeConfig() {
+        try {
+            const candidates = [];
+            if (this.paths && this.paths.dataDir) {
+                candidates.push(path.join(this.paths.dataDir, 'theme.json'));
+            }
+            candidates.push(path.join(process.cwd(), 'data', 'theme.json'));
+            candidates.push(path.join(__dirname, '..', '..', '..', 'data', 'theme.json'));
+            if (process.resourcesPath) {
+                candidates.push(path.join(process.resourcesPath, '..', 'data', 'theme.json'));
+            }
+            const localAppData = process.env.LOCALAPPDATA;
+            if (localAppData) {
+                const appId = (this.config && this.config.appId) || 'com.library.supermarket';
+                candidates.push(path.join(localAppData, appId, 'theme.json'));
+            }
+            for (const p of candidates) {
+                if (fs.existsSync(p)) {
+                    const raw = fs.readFileSync(p, 'utf8');
+                    const parsed = JSON.parse(raw);
+                    if (parsed && typeof parsed === 'object') {
+                        return parsed;
+                    }
+                }
+            }
+        } catch (err) {
+            if (this.logger) {
+                this.logger.warn('[THEME] Could not read theme.json: ' + (err && err.message));
+            }
+        }
+        return {
+            theme: 'light',
+            primary: '#00c8e0',
+            appName: 'Library Store',
+            displayName: 'Library Store',
+            businessName: ''
+        };
     }
     getWindow() {
         return this.mainWindow;
@@ -41,7 +85,7 @@ class WindowManager {
             minWidth,
             minHeight,
             center: true,
-            backgroundColor: this.config.backgroundColor ?? '#0e141c',
+            backgroundColor: this.getThemeConfig().theme === 'light' ? '#f8fafc' : (this.config.backgroundColor || '#0e141c'),
             show: false, // Show only when ready
             autoHideMenuBar: true,
             webPreferences: {
@@ -54,7 +98,13 @@ class WindowManager {
             },
         });
         this.mainWindow.webContents.on('console-message', (event, level, message, line, sourceId) => {
-            this.logger.info(`[RENDERER] [lvl ${level}] ${message} (${sourceId}:${line})`);
+            if (level >= 3 || message.includes('FRONTEND-ERROR') || message.includes('GLOBAL-ERROR')) {
+                this.logger.error(`[RENDERER] ${message} (${sourceId}:${line})`);
+            } else if (level === 2) {
+                this.logger.warn(`[RENDERER] ${message} (${sourceId}:${line})`);
+            } else {
+                this.logger.info(`[RENDERER] [lvl ${level}] ${message} (${sourceId}:${line})`);
+            }
         });
         // 1. Navigation Guard: Never navigate away from local trusted loopback
         const allowedOrigin = `http://127.0.0.1:${this.serverManager.getPort()}`;
@@ -109,25 +159,56 @@ class WindowManager {
         if (!this.mainWindow) {
             this.createMainWindow();
         }
-        const html = `<!DOCTYPE html>
-<html lang="ar" dir="rtl">
-<head>
-  <meta charset="utf-8">
-  <title>${this.config.productNameAr}</title>
-  <style>
-    :root {
+        const themeConfig = this.getThemeConfig();
+        const isLight = themeConfig.theme === 'light';
+        const primaryColor = themeConfig.primary || '#0078d7';
+        const winBg = isLight ? '#f8fafc' : '#0e141c';
+        try {
+            this.mainWindow.setBackgroundColor(winBg);
+        } catch (_) {}
+
+        const displayTitle = (themeConfig.displayName && themeConfig.displayName !== 'Library Store')
+            ? (themeConfig.businessName ? (themeConfig.displayName + ' — ' + themeConfig.businessName) : (themeConfig.displayName + ' — Library Store'))
+            : (this.config.productNameAr || 'Library Store — نظام إدارة المتاجر والمكتبات');
+
+        const cssThemeVars = isLight ? `
+      --bg: #f8fafc;
+      --card: #ffffff;
+      --border: #e2e8f0;
+      --fg: #0f172a;
+      --title: #0f172a;
+      --muted: #64748b;
+      --primary: ${primaryColor};
+      --track-bg: #f1f5f9;
+      --track-border: #0078d7;
+      --label: #334155;
+` : `
       --bg: #0e141c;
       --card: #131b26;
       --border: #223041;
       --fg: #e7eef7;
+      --title: #ffffff;
       --muted: #8fa3ba;
-      --primary: #00c8e0;
+      --primary: ${primaryColor};
+      --track-bg: #131b26;
+      --track-border: #0078d7;
+      --label: #e7eef7;
+`;
+
+        const html = `<!DOCTYPE html>
+<html lang="ar" dir="rtl" class="${isLight ? 'light' : 'dark'}">
+<head>
+  <meta charset="utf-8">
+  <title>${displayTitle}</title>
+  <style>
+    :root {
+${cssThemeVars}
     }
     * { box-sizing: border-box; margin: 0; padding: 0; }
     body {
       background: var(--bg);
       color: var(--fg);
-      font-family: "Segoe UI", Tahoma, "Cairo", sans-serif;
+      font-family: "Cairo", "Segoe UI", Tahoma, sans-serif;
       display: flex;
       flex-direction: column;
       align-items: center;
@@ -135,6 +216,7 @@ class WindowManager {
       min-height: 100vh;
       user-select: none;
       overflow: hidden;
+      transition: background-color 0.2s ease, color 0.2s ease;
     }
     .container {
       display: flex;
@@ -144,36 +226,40 @@ class WindowManager {
       max-width: 480px;
       padding: 32px;
     }
-    .logo-container {
+    .progress-bar-track {
+      width: 246px;
+      height: 20px;
+      border: 1.5px solid var(--track-border);
+      background: var(--track-bg);
+      border-radius: 4px;
+      overflow: hidden;
       position: relative;
-      width: 68px;
-      height: 68px;
-      margin-bottom: 24px;
-      display: flex;
-      align-items: center;
-      justify-content: center;
+      margin: 20px auto 8px;
+      box-shadow: inset 0 1px 2px rgba(0, 0, 0, 0.08);
     }
-    .spinner {
+    .progress-bar-fill {
       position: absolute;
-      width: 100%;
-      height: 100%;
-      border-radius: 50%;
-      border: 3px solid rgba(0, 200, 224, 0.12);
-      border-top-color: var(--primary);
-      animation: spin 0.9s cubic-bezier(0.5, 0.1, 0.5, 0.9) infinite;
+      top: 0;
+      bottom: 0;
+      background: var(--primary);
+      border-radius: 2px;
+      animation: progress-slide 1.5s ease-in-out infinite;
     }
-    .logo-core {
-      width: 28px;
-      height: 28px;
-      background: linear-gradient(135deg, var(--primary), #0284c7);
-      border-radius: 7px;
-      box-shadow: 0 0 24px rgba(0, 200, 224, 0.4);
-      animation: pulse 1.8s ease-in-out infinite;
+    @keyframes progress-slide {
+      0% { left: -40%; width: 40%; }
+      50% { left: 25%; width: 55%; }
+      100% { left: 100%; width: 40%; }
+    }
+    .progress-bar-label {
+      font-size: 13px;
+      font-weight: 600;
+      color: var(--label);
+      margin-bottom: 12px;
     }
     h1 {
       font-size: 20px;
       font-weight: 700;
-      color: #ffffff;
+      color: var(--title);
       margin-bottom: 8px;
       letter-spacing: -0.2px;
     }
@@ -188,23 +274,15 @@ class WindowManager {
       color: var(--muted);
       line-height: 1.5;
     }
-    @keyframes spin {
-      0% { transform: rotate(0deg); }
-      100% { transform: rotate(360deg); }
-    }
-    @keyframes pulse {
-      0%, 100% { transform: scale(1); opacity: 0.9; }
-      50% { transform: scale(1.1); opacity: 1; filter: drop-shadow(0 0 8px rgba(0, 200, 224, 0.8)); }
-    }
   </style>
 </head>
 <body>
   <div class="container">
-    <div class="logo-container">
-      <div class="spinner"></div>
-      <div class="logo-core"></div>
+    <h1>${displayTitle}</h1>
+    <div class="progress-bar-track">
+      <div class="progress-bar-fill"></div>
     </div>
-    <h1>${this.config.productNameAr}</h1>
+    <div class="progress-bar-label">جاري التحميل</div>
     <div class="status">جاري تشغيل النظام والاتصال بقاعدة البيانات...</div>
     <div class="hint">برجاء الانتظار لحظات، يتم تجهيز بيئة التشغيل المحلية</div>
   </div>
@@ -229,7 +307,7 @@ class WindowManager {
             try {
                 await this.mainWindow.webContents.session.clearStorageData({
                     origin: allowedOrigin,
-                    storages: ['cookies', 'localstorage', 'sessionstorage'],
+                    storages: ['cookies', 'sessionstorage'], // preserve localstorage for user theme & lang
                 });
                 this.logger.info(`[AUTH] Cleared prior session storage data for ${allowedOrigin}`);
             } catch (clearErr) {

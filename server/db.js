@@ -599,36 +599,44 @@ const DEFAULT_PERMISSIONS_OWNER = [
 const DEFAULT_ROLES = [
   { id: 'role_owner', tenantId: 'default', key: 'owner', nameAr: 'المالك', nameEn: 'Owner',
     description: 'صلاحيات كاملة', permissions: JSON.stringify(DEFAULT_PERMISSIONS_OWNER), isSystem: 1 },
-  { id: 'role_manager', tenantId: 'default', key: 'manager', nameAr: 'مدير فرع', nameEn: 'Manager',
-    description: 'إدارة العمليات اليومية',
-    permissions: JSON.stringify(['DASHBOARD_VIEW','PRODUCT_VIEW','PRODUCT_CREATE','PRODUCT_EDIT',
-      'CATEGORY_VIEW','CATEGORY_MANAGE','INVENTORY_VIEW','INVENTORY_ADJUST','STOCKTAKE_CREATE',
-      'SALES_VIEW','SALES_CREATE','SALES_CANCEL','SALES_RETURN','PURCHASE_VIEW','PURCHASE_CREATE',
-      'PURCHASE_RECEIVE','SUPPLIER_VIEW','CUSTOMER_VIEW','CUSTOMER_MANAGE',
-      'REPORT_VIEW','REPORT_EXPORT','USER_VIEW','SETTINGS_VIEW','HARDWARE_MANAGE','AUDIT_VIEW']),
-    isSystem: 1 },
   { id: 'role_cashier', tenantId: 'default', key: 'cashier', nameAr: 'كاشير', nameEn: 'Cashier',
     description: 'عمليات نقطة البيع',
     permissions: JSON.stringify(['DASHBOARD_VIEW','PRODUCT_VIEW','SALES_VIEW','SALES_CREATE','SALES_RETURN','CUSTOMER_VIEW']),
     isSystem: 1 },
-  { id: 'role_inventory', tenantId: 'default', key: 'inventory_manager', nameAr: 'مدير مخزون', nameEn: 'Inventory Manager',
-    description: 'إدارة المخزون والمشتريات',
-    permissions: JSON.stringify(['DASHBOARD_VIEW','PRODUCT_VIEW','PRODUCT_CREATE','PRODUCT_EDIT',
-      'CATEGORY_VIEW','INVENTORY_VIEW','INVENTORY_ADJUST','STOCKTAKE_CREATE',
-      'PURCHASE_VIEW','PURCHASE_CREATE','PURCHASE_RECEIVE','SUPPLIER_VIEW','REPORT_VIEW']),
-    isSystem: 1 },
-  { id: 'role_accountant', tenantId: 'default', key: 'accountant', nameAr: 'محاسب', nameEn: 'Accountant',
-    description: 'التقارير المالية والمبيعات',
-    permissions: JSON.stringify(['DASHBOARD_VIEW','PRODUCT_VIEW','SALES_VIEW','PURCHASE_VIEW',
-      'CUSTOMER_VIEW','SUPPLIER_VIEW','REPORT_VIEW','REPORT_EXPORT','SETTINGS_VIEW']),
-    isSystem: 1 },
-  { id: 'role_viewer', tenantId: 'default', key: 'viewer', nameAr: 'مشاهد', nameEn: 'Viewer',
-    description: 'عرض فقط',
-    permissions: JSON.stringify(['DASHBOARD_VIEW','PRODUCT_VIEW','SALES_VIEW','REPORT_VIEW']),
-    isSystem: 1 },
 ];
 
-const DEFAULT_BRANDING = { appName: 'Library Store', logoUrl: null, primaryColor: '#00c8e0', defaultTheme: 'dark' };
+const DEFAULT_BRANDING = {
+  primary: '#00c8e0',
+  primaryColor: '#00c8e0',
+  secondary: '#14b8a6',
+  accent: '#22d3ee',
+  appName: 'Library Store',
+  logoDataUrl: null,
+  logoUrl: null,
+  defaultTheme: 'dark',
+};
+
+function normalizeBranding(raw) {
+  const b = typeof raw === 'object' && raw !== null ? raw : safeJson(raw, DEFAULT_BRANDING);
+  const primary = b.primary || b.primaryColor || DEFAULT_BRANDING.primary;
+  const secondary = b.secondary || DEFAULT_BRANDING.secondary;
+  const accent = b.accent || DEFAULT_BRANDING.accent;
+  const logoDataUrl = b.logoDataUrl || b.logoUrl || null;
+  const appName = b.appName || DEFAULT_BRANDING.appName;
+  const defaultTheme = b.defaultTheme || DEFAULT_BRANDING.defaultTheme;
+  return {
+    ...DEFAULT_BRANDING,
+    ...b,
+    primary,
+    primaryColor: primary,
+    secondary,
+    accent,
+    logoDataUrl,
+    logoUrl: logoDataUrl,
+    appName,
+    defaultTheme,
+  };
+}
 const DEFAULT_BUSINESS = { businessName: 'Library Store', displayName: 'Library Store', address: '', phone: '', taxId: '', currency: 'EGP', currencySymbol: 'ج.م' };
 const DEFAULT_HARDWARE = { receiptPrinter: null, cashDrawer: false, barcodeScanner: true };
 const DEFAULT_POS = { currency: 'EGP', currencySymbol: 'ج.م', units: ['piece','kg','box','liter','pack','dozen'], receiptFooter: 'شكراً لزيارتكم', cashRounding: false, allowBelowMinPrice: false };
@@ -637,6 +645,12 @@ const DEFAULT_BACKUP = { autoBackup: false, backupInterval: 'daily', keepCount: 
 const DEFAULT_SYSTEM = { theme: 'dark', requireLoginOnLaunch: true };
 
 function ensureSystemData() {
+  // Enforce deprecated system roles purge
+  try {
+    const _db = openDb();
+    _db.prepare("UPDATE User SET roleKey='cashier' WHERE roleKey IN ('manager', 'inventory_manager', 'accountant', 'viewer')").run();
+    _db.prepare("DELETE FROM Role WHERE key IN ('manager', 'inventory_manager', 'accountant', 'viewer')").run();
+  } catch (_e) {}
   const db = openDb();
   // Roles
   const roleCount = db.prepare('SELECT COUNT(*) as c FROM Role').get().c;
@@ -648,6 +662,19 @@ function ensureSystemData() {
       } catch (e) { console.warn("[DB] Seed warning:", e && e.message); }
     }
   }
+  // Ensure the owner role always has ALL default permissions (including LICENSE_VIEW)
+  try {
+    const ownerRole = db.prepare("SELECT id, permissions FROM Role WHERE key='owner'").get();
+    if (ownerRole) {
+      let currentPerms = [];
+      try { currentPerms = JSON.parse(ownerRole.permissions); } catch (e) { currentPerms = []; }
+      const missing = DEFAULT_PERMISSIONS_OWNER.filter(p => !currentPerms.includes(p));
+      if (missing.length > 0) {
+        const mergedPerms = Array.from(new Set([...currentPerms, ...DEFAULT_PERMISSIONS_OWNER]));
+        db.prepare("UPDATE Role SET permissions=?, updatedAt=? WHERE key='owner'").run(JSON.stringify(mergedPerms), now());
+      }
+    }
+  } catch (e) { console.warn("[DB] Owner role permissions sync warning:", e && e.message); }
   // Settings
   const settingsRow = db.prepare('SELECT id FROM AppSettings WHERE id=?').get('default');
   if (!settingsRow) {
@@ -683,6 +710,50 @@ function safeJson(str, fallback) {
   try { return JSON.parse(str) || fallback; } catch { return fallback; }
 }
 
+
+function syncThemeFile(settings) {
+  try {
+    let business = settings && settings.business ? settings.business : null;
+    let branding = settings && settings.branding ? settings.branding : null;
+    if (!business || !branding) {
+      const db = openDb();
+      const row = db.prepare('SELECT business, branding FROM AppSettings WHERE id=?').get('default');
+      business = safeJson(row && row.business, DEFAULT_BUSINESS);
+      branding = normalizeBranding(row && row.branding);
+    }
+    const themeData = {
+      theme: branding.defaultTheme === 'light' ? 'light' : 'dark',
+      primary: branding.primary || branding.primaryColor || '#00c8e0',
+      appName: branding.appName || 'Library Store',
+      displayName: business.displayName || business.businessName || 'Library Store',
+      businessName: business.businessName || '',
+      updatedAt: new Date().toISOString()
+    };
+    const candidates = [
+      path.join(__dirname, '..', 'data'),
+      path.join(__dirname, 'data'),
+      path.join(process.cwd(), 'data'),
+    ];
+    if (process.env.ELECTRON_RESOURCES_PATH) {
+      candidates.unshift(path.join(process.env.ELECTRON_RESOURCES_PATH, '..', 'data'));
+    }
+    const localAppData = process.env.LOCALAPPDATA;
+    if (localAppData) {
+      candidates.push(path.join(localAppData, 'com.library.supermarket'));
+    }
+    for (const d of candidates) {
+      try {
+        if (!fs.existsSync(d)) fs.mkdirSync(d, { recursive: true });
+        fs.writeFileSync(path.join(d, 'theme.json'), JSON.stringify(themeData, null, 2), 'utf8');
+      } catch (_) {}
+    }
+    return themeData;
+  } catch (err) {
+    console.warn('[THEME] Sync theme error:', err && err.message);
+    return null;
+  }
+}
+
 function getSettings(tenantId) {
   ensureBootstrap();
   ensureSystemData();
@@ -691,7 +762,7 @@ function getSettings(tenantId) {
   if (!row && tid !== 'default') row = one('SELECT * FROM AppSettings WHERE id=?', 'default');
   return {
     business: safeJson(row && row.business, DEFAULT_BUSINESS),
-    branding: safeJson(row && row.branding, DEFAULT_BRANDING),
+    branding: normalizeBranding(row && row.branding),
     hardware: safeJson(row && row.hardware, DEFAULT_HARDWARE),
     pos: safeJson(row && row.pos, DEFAULT_POS),
     localization: safeJson(row && row.localization, DEFAULT_LOCALIZATION),
@@ -730,10 +801,14 @@ function getSessionUser(token) {
   let permissions = [];
   try { permissions = JSON.parse(user.permissions); } catch (e) { permissions = []; }
   const isOwner = user.roleKey && user.roleKey.toLowerCase() === 'owner';
+  let effectivePermissions = permissions.length > 0 ? permissions : (isOwner ? DEFAULT_PERMISSIONS_OWNER : []);
+  if (isOwner) {
+    effectivePermissions = Array.from(new Set([...effectivePermissions, ...DEFAULT_PERMISSIONS_OWNER]));
+  }
   return {
     id: user.id, username: user.username, displayName: user.displayName,
     roleKey: user.roleKey, roleNameAr: user.roleNameAr, roleNameEn: user.roleNameEn,
-    permissions: permissions.length > 0 ? permissions : (isOwner ? DEFAULT_PERMISSIONS_OWNER : []),
+    permissions: effectivePermissions,
   };
 }
 
@@ -742,7 +817,7 @@ function destroySession(token) {
 }
 
 module.exports = {
-  openDb, closeDb, ensureBootstrap, ensureSystemData, getSettings, getDbPath,
+  openDb, closeDb, ensureBootstrap, ensureSystemData, getSettings, getDbPath, syncThemeFile,
   newId, now, bool, fromBool, parseBoolField, safeJson,
   one, all, run, transaction,
   nextDocNo, hashPassword, verifyPassword, audit,

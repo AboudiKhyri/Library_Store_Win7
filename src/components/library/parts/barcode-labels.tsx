@@ -42,12 +42,16 @@ export function BarcodeLabelsSheet({
   copiesPerLabel = 1,
   business,
   money,
+  className,
+  style,
 }: {
   rows: LabelRow[]
   size?: LabelSize
   copiesPerLabel?: number
   business?: BusinessConfig | null
   money: (n: number) => string
+  className?: string
+  style?: React.CSSProperties
 }) {
   const spec = LABEL_SIZES[size]
   const printable = useMemo(() => rows.filter((r) => r.barcode || r.sku), [rows])
@@ -63,9 +67,9 @@ export function BarcodeLabelsSheet({
 
   return (
     <div
-      className="flex flex-wrap items-start gap-[3mm] bg-white p-[6mm] text-black"
+      className={cn("flex flex-wrap items-start gap-[3mm] bg-white p-[6mm] text-black", className)}
       dir="rtl"
-      style={{ width: '190mm' }} // A4 width minus margins
+      style={{ width: '190mm', boxSizing: 'border-box', ...style }} // A4 width minus margins
       aria-label="ورقة ملصقات الباركود"
     >
       {cells.map((cell, i) => {

@@ -124,3 +124,60 @@ export function normalizeBarcode(input: unknown): string | null {
   const str = String(input).replace(/[\x00-\x1F\x7F]/g, '').trim();
   return str.length > 0 ? str : null;
 }
+
+/**
+ * Generates an in-store EAN-13 barcode deterministically derived from product name and price.
+ * - Digits 1-2: 20 (standard in-store retail prefix)
+ * - Digits 3-7: 5-digit deterministic hash from nameAr
+ * - Digits 8-12: 5-digit price in integer currency units
+ * - Digit 13: GS1 EAN-13 check digit
+ */
+export function generateBarcodeFromNameAndPrice(
+  nameAr: string,
+  price: unknown,
+  existingBarcodes: Set<string> | string[] = new Set()
+): string {
+  const set = existingBarcodes instanceof Set ? existingBarcodes : new Set(existingBarcodes || []);
+  const nameStr = (nameAr || '').trim();
+  let hash = 5381;
+  for (let i = 0; i < nameStr.length; i++) {
+    hash = ((hash << 5) + hash) + nameStr.charCodeAt(i);
+    hash = hash & hash;
+  }
+  const nameNum = Math.abs(hash) % 90000 + 10000;
+  const p = Math.max(0, Math.min(99999, Math.round(parseFloat(String(price || 0)) || 0)));
+  const priceDigits = String(p).padStart(5, '0');
+
+  let attempt = 0;
+  while (attempt < 100) {
+    const nameDigits = String((nameNum + attempt) % 90000 + 10000).padStart(5, '0');
+    const payload12 = '20' + nameDigits + priceDigits;
+    const checkDigit = calculateEan13CheckDigit(payload12);
+    const candidate = payload12 + checkDigit.toString();
+    if (!set.has(candidate)) {
+      return candidate;
+    }
+    attempt++;
+  }
+  return '20' + String(Date.now()).slice(-10) + '0';
+}
+
+/**
+ * Generates a structured QR code identifier derived from product name, price, and SKU.
+ */
+export function generateQrFromNameAndPrice(
+  nameAr: string,
+  price: unknown,
+  sku?: string
+): string {
+  const nameStr = (nameAr || '').trim();
+  let hash = 5381;
+  for (let i = 0; i < nameStr.length; i++) {
+    hash = ((hash << 5) + hash) + nameStr.charCodeAt(i);
+    hash = hash & hash;
+  }
+  const nameCode = String(Math.abs(hash) % 9000 + 1000);
+  const p = Math.max(0, Math.min(99999, Math.round(parseFloat(String(price || 0)) || 0)));
+  const skuTag = (sku || 'SKU').replace(/[^a-zA-Z0-9]/g, '');
+  return `QR-${skuTag}-${nameCode}-P${p}`;
+}

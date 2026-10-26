@@ -64,7 +64,7 @@ export function AboutScreen() {
 
           <div className="grid w-full max-w-md grid-cols-2 gap-3 text-start sm:grid-cols-3">
             <AboutField label="المنتج" value="Library Store" />
-            <AboutField label="الإصدار" value={`v${status?.version ?? '1.0.0'}`} mono />
+            <AboutField label="الإصدار" value={`v${status?.version ?? '1.0.1'}`} mono />
             <AboutField label="البناء" value={status?.build ?? '2026092201'} mono />
           </div>
         </CardContent>

@@ -59,7 +59,7 @@ export default function RootLayout({
         />
         <script
           dangerouslySetInnerHTML={{
-            __html: `(function(){try{var t=localStorage.getItem('library-theme')||localStorage.getItem('qx-theme')||'dark';var l=localStorage.getItem('library-lang')||'ar';document.documentElement.classList.toggle('dark',t==='dark');document.documentElement.setAttribute('dir',l==='ar'?'rtl':'ltr');document.documentElement.setAttribute('lang',l);}catch(e){}})();`,
+            __html: `(function(){try{var t=localStorage.getItem('library-theme')||localStorage.getItem('qx-theme');var l=localStorage.getItem('library-lang')||'ar';if(t){document.documentElement.classList.toggle('dark',t==='dark');}document.documentElement.setAttribute('dir',l==='ar'?'rtl':'ltr');document.documentElement.setAttribute('lang',l);}catch(e){}})();`,
           }}
         />
       </head>

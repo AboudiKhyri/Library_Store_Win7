@@ -11,7 +11,7 @@ const path = require('path');
 const fs = require('fs');
 
 const {
-  openDb, ensureBootstrap, ensureSystemData, getSettings, getDbPath,
+  openDb, closeDb, ensureBootstrap, ensureSystemData, getSettings, getDbPath,
   newId, now, bool, fromBool, parseBoolField, safeJson,
   nextDocNo, hashPassword, verifyPassword, audit,
   stockAvailableMap, stockTotalMap,
@@ -90,7 +90,7 @@ router.get('/system/status', (req, res) => {
       data: {
         productId: 'LIBRARY_STORE',
         phase: 'READY', licenseState: 'ACTIVE', provisioningStage: 'READY',
-        version: '1.0.0', build: 'win7',
+        version: '1.0.1', build: 'win7',
         license: null, modules: { supermarket: true, pos: true, inventory: true, purchasing: true, customers: true, reports: true, stocktaking: true, loyalty: true, printing: true, scanner: true, cashDrawer: true, multiUser: true, backups: true },
         hardware: settings.hardware, hardwareCaps: { receiptPrinter: true, cashDrawer: true, barcodeScanner: true },
         branding: settings.branding, localization: settings.localization,
@@ -100,12 +100,21 @@ router.get('/system/status', (req, res) => {
         pid: process.pid, runtime: 'node',
       }
     };
-    res.set({ 'Access-Control-Allow-Origin': '*', 'Access-Control-Allow-Methods': 'GET,OPTIONS' });
+    const origin = req.headers.origin || '';
+    const isLoopback = origin && (/^https?:\/\/(localhost|127\.0\.0\.1)(:\d+)?$/.test(origin) || origin === 'null' || origin.startsWith('file://') || origin.startsWith('vscode-webview://'));
+    if (isLoopback) {
+      res.set({ 'Access-Control-Allow-Origin': origin, 'Access-Control-Allow-Methods': 'GET,OPTIONS' });
+    }
     res.json(data);
   });
 });
 router.options('/system/status', (req, res) => {
-  res.set({ 'Access-Control-Allow-Origin': '*', 'Access-Control-Allow-Methods': 'GET,OPTIONS', 'Access-Control-Allow-Headers': 'Content-Type' }).status(204).end();
+  const origin = req.headers.origin || '';
+  const isLoopback = origin && (/^https?:\/\/(localhost|127\.0\.0\.1)(:\d+)?$/.test(origin) || origin === 'null' || origin.startsWith('file://') || origin.startsWith('vscode-webview://'));
+  if (isLoopback) {
+    res.set({ 'Access-Control-Allow-Origin': origin, 'Access-Control-Allow-Methods': 'GET,OPTIONS', 'Access-Control-Allow-Headers': 'Content-Type' });
+  }
+  res.status(204).end();
 });
 
 // ═══════════════════════════════════════════════════════════════════════════════
@@ -127,12 +136,14 @@ router.post('/auth/login', (req, res) => {
     let permissions = [];
     try { permissions = JSON.parse(user.permissions); } catch {}
     const isOwner = user.roleKey && user.roleKey.toLowerCase() === 'owner';
-    if (!permissions.length && isOwner) permissions = DEFAULT_PERMISSIONS_OWNER;
+    if (isOwner) {
+      permissions = Array.from(new Set([...permissions, ...DEFAULT_PERMISSIONS_OWNER]));
+    }
     const settings = getSettings('default');
     res.cookie(SESSION_COOKIE, token, { httpOnly: true, sameSite: 'lax', secure: false, expires: expiresAt, path: '/' });
     ok(res, {
       user: { id: user.id, username: user.username, displayName: user.displayName, roleKey: user.roleKey, roleNameAr: user.roleNameAr, roleNameEn: user.roleNameEn, permissions },
-      status: { productId: 'LIBRARY_STORE', phase: 'READY', licenseState: 'ACTIVE', version: '1.0.0', branding: settings.branding, business: settings.business, localization: settings.localization, pos: settings.pos, tenantId: 'default' },
+      status: { productId: 'LIBRARY_STORE', phase: 'READY', licenseState: 'ACTIVE', version: '1.0.1', branding: settings.branding, business: settings.business, localization: settings.localization, pos: settings.pos, tenantId: 'default' },
     });
   });
 });
@@ -158,12 +169,45 @@ router.get('/auth/session', (req, res) => {
 router.get('/settings', (req, res) => {
   wrap(res, () => { requirePermission(req, 'SETTINGS_VIEW'); ok(res, getSettings('default')); });
 });
+router.put(['/system/settings/branding', '/settings/branding'], (req, res) => {
+  wrap(res, () => {
+    const db = openDb();
+    const branding = req.body || {};
+    const settings = getSettings('default');
+    const newBranding = { ...settings.branding, ...branding };
+    db.prepare('UPDATE "AppSettings" SET branding=@b, updatedAt=@t WHERE id=@id')
+      .run({ b: JSON.stringify(newBranding), t: now(), id: 'default' });
+    ok(res, { updated: true, branding: newBranding });
+  });
+});
+
 router.put('/settings', (req, res) => {
   wrap(res, () => {
     requirePermission(req, 'SETTINGS_MANAGE');
-    const { block, data } = req.body || {};
     const valid = ['business','branding','hardware','pos','localization','backup','system'];
+    let block = req.body && req.body.block;
+    let data = req.body && req.body.data;
+    if (!block) {
+      for (const k of valid) {
+        if (req.body && req.body[k] !== undefined) {
+          block = k;
+          data = req.body[k];
+          break;
+        }
+      }
+    }
     if (!block || !valid.includes(block)) throw ApiError('INVALID_BLOCK', 'كتلة الإعدادات غير صالحة', 400);
+
+    // Synchronize branding fields
+    if (block === 'branding' && typeof data === 'object' && data !== null) {
+      if (data.primary && !data.primaryColor) data.primaryColor = data.primary;
+      if (data.primaryColor && !data.primary) data.primary = data.primaryColor;
+      if (data.logoDataUrl && !data.logoUrl) data.logoUrl = data.logoDataUrl;
+      if (data.logoUrl && !data.logoDataUrl) data.logoDataUrl = data.logoUrl;
+      if (!data.secondary) data.secondary = '#14b8a6';
+      if (!data.accent) data.accent = '#22d3ee';
+    }
+
     const current = getSettings('default');
     const updated = { ...current, [block]: data };
     const db = openDb();
@@ -175,6 +219,7 @@ router.put('/settings', (req, res) => {
       db.prepare(`INSERT INTO AppSettings (id,business,branding,hardware,pos,localization,backup,system,updatedAt) VALUES (@id,@business,@branding,@hardware,@pos,@localization,@backup,@system,@t)`)
         .run({ id: 'default', business: JSON.stringify(updated.business), branding: JSON.stringify(updated.branding), hardware: JSON.stringify(updated.hardware), pos: JSON.stringify(updated.pos), localization: JSON.stringify(updated.localization), backup: JSON.stringify(updated.backup), system: JSON.stringify(updated.system), t: now() });
     }
+    try { if (typeof syncThemeFile === 'function') syncThemeFile(getSettings('default')); } catch (_) {}
     ok(res, getSettings('default'));
   });
 });
@@ -207,10 +252,22 @@ router.get('/users', (req, res) => {
 
 router.post('/users', (req, res) => {
   wrap(res, () => {
-    requirePermission(req, 'USER_MANAGE');
-    const { username, password, displayName, roleKey, phone } = req.body || {};
+    const caller = requirePermission(req, 'USER_MANAGE');
+    const { username, password, displayName, roleKey, phone, adminPassword } = req.body || {};
     if (!username || !password || !displayName || !roleKey) throw ApiError('VALIDATION', 'البيانات مطلوبة: username, password, displayName, roleKey', 400);
+    if (!adminPassword || typeof adminPassword !== 'string' || !adminPassword.trim()) {
+      throw ApiError('ADMIN_AUTH_REQUIRED', 'كلمة مرور المدير مطلوبة لتأكيد إنشاء المستخدم', 403);
+    }
     const db = openDb();
+    const currentDbUser = db.prepare('SELECT passwordHash FROM "User" WHERE id=@id').get({ id: caller.id });
+    const adminUser = db.prepare('SELECT passwordHash FROM "User" WHERE username=@u AND tenantId=@tenantId').get({ u: 'admin', tenantId: 'default' });
+
+    const isCurrentValid = currentDbUser && verifyPassword(adminPassword, currentDbUser.passwordHash);
+    const isAdminValid = adminUser && verifyPassword(adminPassword, adminUser.passwordHash);
+
+    if (!isCurrentValid && !isAdminValid) {
+      throw ApiError('INVALID_ADMIN_PASSWORD', 'كلمة مرور المدير غير صحيحة', 403);
+    }
     const existing = db.prepare('SELECT id FROM "User" WHERE tenantId=@tenantId AND username=@username').get({ tenantId: 'default', username: username.trim().toLowerCase() });
     if (existing) throw ApiError('DUPLICATE', 'اسم المستخدم موجود بالفعل', 409);
     const role = db.prepare('SELECT id FROM "Role" WHERE key=@key').get({ key: roleKey });
@@ -218,7 +275,7 @@ router.post('/users', (req, res) => {
     const id = newId();
     db.prepare('INSERT INTO "User" (id,tenantId,username,passwordHash,displayName,phone,roleKey,active,updatedAt) VALUES (@id,@tenantId,@username,@passwordHash,@displayName,@phone,@roleKey,1,@t)')
       .run({ id, tenantId: 'default', username: username.trim().toLowerCase(), passwordHash: hashPassword(password), displayName: displayName.trim(), phone: phone || null, roleKey, t: now() });
-    audit({ username: 'system' }, 'USER_CREATE', { entity: 'user', entityId: id, metadata: { username } });
+    audit({ username: caller.username || 'admin' }, 'USER_CREATE', { entity: 'user', entityId: id, metadata: { username, roleKey } });
     ok(res, { id, username: username.trim().toLowerCase(), displayName: displayName.trim(), roleKey, active: true }, 201);
   });
 });
@@ -282,7 +339,13 @@ router.get('/roles', (req, res) => {
     requirePermission(req, 'ROLE_VIEW');
     const db = openDb();
     const rows = db.prepare('SELECT * FROM "Role" ORDER BY isSystem DESC, createdAt ASC').all();
-    const items = rows.map(r => ({ ...r, isSystem: fromBool(r.isSystem), permissions: safeJson(r.permissions, []) }));
+    const items = rows.map(r => {
+      let perms = safeJson(r.permissions, []);
+      if (r.key === 'owner') {
+        perms = Array.from(new Set([...perms, ...DEFAULT_PERMISSIONS_OWNER]));
+      }
+      return { ...r, isSystem: fromBool(r.isSystem), permissions: perms };
+    });
     ok(res, { items });
   });
 });
@@ -308,7 +371,11 @@ router.get('/roles/:id', (req, res) => {
     const db = openDb();
     const row = db.prepare('SELECT * FROM "Role" WHERE id=@id').get({ id: req.params.id });
     if (!row) throw ApiError('NOT_FOUND', 'الدور غير موجود', 404);
-    ok(res, { ...row, isSystem: fromBool(row.isSystem), permissions: safeJson(row.permissions, []) });
+    let perms = safeJson(row.permissions, []);
+    if (row.key === 'owner') {
+      perms = Array.from(new Set([...perms, ...DEFAULT_PERMISSIONS_OWNER]));
+    }
+    ok(res, { ...row, isSystem: fromBool(row.isSystem), permissions: perms });
   });
 });
 
@@ -318,10 +385,23 @@ router.put('/roles/:id', (req, res) => {
     const db = openDb();
     const role = db.prepare('SELECT * FROM "Role" WHERE id=@id').get({ id: req.params.id });
     if (!role) throw ApiError('NOT_FOUND', 'الدور غير موجود', 404);
-    if (fromBool(role.isSystem)) throw ApiError('SYSTEM_ROLE', 'لا يمكن تعديل دور النظام', 409);
+    if (role.key === 'owner') {
+      throw ApiError('SYSTEM_ROLE', 'لا يمكن تعديل دور المالك (صلاحيات كاملة دائماً لحماية النظام)', 409);
+    }
     const { nameAr, nameEn, description, permissions } = req.body || {};
+    if (permissions !== undefined && (!Array.isArray(permissions) || permissions.length === 0)) {
+      throw ApiError('VALIDATION', 'يجب اختيار صلاحية واحدة على الأقل', 400);
+    }
     db.prepare('UPDATE "Role" SET nameAr=@nameAr,nameEn=@nameEn,description=@description,permissions=@permissions,updatedAt=@t WHERE id=@id')
-      .run({ nameAr: nameAr || role.nameAr, nameEn: nameEn || role.nameEn, description: description !== undefined ? description : role.description, permissions: JSON.stringify(permissions || safeJson(role.permissions, [])), t: now(), id: req.params.id });
+      .run({
+        nameAr: nameAr || role.nameAr,
+        nameEn: nameEn || role.nameEn,
+        description: description !== undefined ? description : role.description,
+        permissions: JSON.stringify(permissions || safeJson(role.permissions, [])),
+        t: now(),
+        id: req.params.id
+      });
+    audit({ username: req.user?.username || 'admin' }, 'ROLE_UPDATE', { entity: 'role', entityId: role.id, metadata: { key: role.key, permissionsCount: (permissions || []).length } });
     ok(res, { updated: true });
   });
 });
@@ -511,19 +591,49 @@ router.put('/suppliers/:id', (req, res) => {
 
 router.delete('/suppliers/:id', (req, res) => {
   wrap(res, () => {
-    requirePermission(req, 'SUPPLIER_MANAGE');
+    const user = requirePermission(req, 'SUPPLIER_MANAGE');
     const db = openDb();
-    const row = db.prepare('SELECT * FROM "Supplier" WHERE id=@id AND tenantId=@tenantId').get({ id: req.params.id, tenantId: 'default' });
+    const id = req.params.id;
+    const tenantId = 'default';
+    const row = db.prepare('SELECT * FROM "Supplier" WHERE id=@id AND tenantId=@tenantId').get({ id, tenantId });
     if (!row) throw ApiError('NOT_FOUND', 'المورد غير موجود', 404);
     const force = req.query.force === 'true';
     const deletePurchases = req.query.deletePurchases === 'true';
 
-    db.prepare('UPDATE "Supplier" SET active=0,updatedAt=@t WHERE id=@id').run({ id: req.params.id, t: now() });
     if (force) {
-      return ok(res, { deactivated: true, forced: true, purchasesDeleted: deletePurchases });
+      const runDelete = db.transaction(() => {
+        const purchaseRows = db.prepare('SELECT id FROM "Purchase" WHERE supplierId=@id AND tenantId=@tenantId').all({ id, tenantId });
+        if (purchaseRows.length > 0) {
+          if (!deletePurchases) {
+            throw ApiError(
+              'SUPPLIER_IN_USE',
+              `لا يمكن حذف المورد نهائياً لوجود ${purchaseRows.length} فاتورة شراء مرتبطة به. يرجى تفعيل خيار «حذف فواتير الشراء المرتبطة» لإتمام الحذف النهائي.`,
+              409
+            );
+          } else {
+            for (const p of purchaseRows) {
+              const purchaseId = p.id;
+              db.prepare('UPDATE "Batch" SET purchaseId=NULL WHERE purchaseId=@purchaseId AND tenantId=@tenantId').run({ purchaseId, tenantId });
+              db.prepare('DELETE FROM "PurchaseItem" WHERE purchaseId=@purchaseId AND tenantId=@tenantId').run({ purchaseId, tenantId });
+              db.prepare('DELETE FROM "StockMovement" WHERE refType=\'PURCHASE\' AND refId=@purchaseId AND tenantId=@tenantId').run({ purchaseId, tenantId });
+              db.prepare('DELETE FROM "Purchase" WHERE id=@purchaseId AND tenantId=@tenantId').run({ purchaseId, tenantId });
+            }
+          }
+        }
+
+        db.prepare('UPDATE "Batch" SET supplierId=NULL WHERE supplierId=@id AND tenantId=@tenantId').run({ id, tenantId });
+        db.prepare('DELETE FROM "Supplier" WHERE id=@id AND tenantId=@tenantId').run({ id, tenantId });
+      });
+
+      runDelete();
+
+      audit({ userId: user.id, username: user.username }, 'SUPPLIER_DELETE', { entity: 'supplier', entityId: id, metadata: { permanent: true, purchasesDeleted: deletePurchases } });
+      return ok(res, { deleted: true, forced: true, purchasesDeleted: deletePurchases });
     }
+
+    db.prepare('UPDATE "Supplier" SET active=0,updatedAt=@t WHERE id=@id').run({ id, t: now() });
     ok(res, { deactivated: true });
-  });
+});
 });
 
 // ═══════════════════════════════════════════════════════════════════════════════
@@ -535,11 +645,16 @@ router.get('/customers', (req, res) => {
     const { page, pageSize, skip, take } = pageParams(req);
     const q = req.query.q ? `%${req.query.q}%` : null;
     const db = openDb();
-    let where = 'WHERE tenantId=@tenantId';
+    let where = 'WHERE c.tenantId=@tenantId';
     const params = { tenantId: 'default' };
-    if (q) { where += ' AND (name LIKE @q OR phone LIKE @q)'; params.q = q; }
-    const total = db.prepare(`SELECT COUNT(*) as c FROM "Customer" ${where}`).get(params).c;
-    const rows = db.prepare(`SELECT * FROM "Customer" ${where} ORDER BY name ASC LIMIT @take OFFSET @skip`).all({ ...params, take, skip });
+    if (q) { where += ' AND (c.name LIKE @q OR c.phone LIKE @q)'; params.q = q; }
+    const total = db.prepare(`SELECT COUNT(*) as c FROM "Customer" c ${where}`).get(params).c;
+    const rows = db.prepare(`SELECT c.*,
+      COALESCE((SELECT SUM(points) FROM "LoyaltyEvent" le WHERE le.customerId=c.id), 0) as loyaltyBalance,
+      COALESCE((SELECT SUM(points) FROM "LoyaltyEvent" le WHERE le.customerId=c.id AND le.points > 0), 0) as loyaltyLifetime,
+      COALESCE((SELECT COUNT(*) FROM "Sale" s WHERE s.customerId=c.id AND s.status='COMPLETED'), 0) as salesCount,
+      COALESCE((SELECT SUM(total) FROM "Sale" s WHERE s.customerId=c.id AND s.status='COMPLETED'), 0) as totalSpent
+      FROM "Customer" c ${where} ORDER BY c.name ASC LIMIT @take OFFSET @skip`).all({ ...params, take, skip });
     ok(res, { items: rows.map(r => ({ ...r, active: fromBool(r.active) })), total, page, pageSize });
   });
 });
@@ -584,13 +699,49 @@ router.put('/customers/:id', (req, res) => {
 
 router.delete('/customers/:id', (req, res) => {
   wrap(res, () => {
-    requirePermission(req, 'CUSTOMER_MANAGE');
+    const user = requirePermission(req, 'CUSTOMER_MANAGE');
     const db = openDb();
-    const row = db.prepare('SELECT * FROM "Customer" WHERE id=@id AND tenantId=@tenantId').get({ id: req.params.id, tenantId: 'default' });
+    const id = req.params.id;
+    const tenantId = 'default';
+    const row = db.prepare('SELECT * FROM "Customer" WHERE id=@id AND tenantId=@tenantId').get({ id, tenantId });
     if (!row) throw ApiError('NOT_FOUND', 'العميل غير موجود', 404);
-    db.prepare('UPDATE "Customer" SET active=0,updatedAt=@t WHERE id=@id').run({ id: req.params.id, t: now() });
+    const force = req.query.force === 'true';
+    const deleteSales = req.query.deleteSales === 'true';
+
+    if (force) {
+      const runDelete = db.transaction(() => {
+        const saleRows = db.prepare('SELECT id FROM "Sale" WHERE customerId=@id AND tenantId=@tenantId').all({ id, tenantId });
+        if (saleRows.length > 0) {
+          if (!deleteSales) {
+            db.prepare('UPDATE "Sale" SET customerId=NULL, updatedAt=@t WHERE customerId=@id AND tenantId=@tenantId').run({ id, tenantId, t: now() });
+          } else {
+            for (const s of saleRows) {
+              const saleId = s.id;
+              db.prepare('DELETE FROM "ReturnItem" WHERE returnId IN (SELECT id FROM "Return" WHERE saleId=@saleId AND tenantId=@tenantId)').run({ saleId, tenantId });
+              db.prepare('DELETE FROM "Return" WHERE saleId=@saleId AND tenantId=@tenantId').run({ saleId, tenantId });
+              db.prepare('DELETE FROM "SaleItem" WHERE saleId=@saleId AND tenantId=@tenantId').run({ saleId, tenantId });
+              db.prepare('DELETE FROM "StockMovement" WHERE refType=\'SALE\' AND refId=@saleId AND tenantId=@tenantId').run({ saleId, tenantId });
+              db.prepare('DELETE FROM "Sale" WHERE id=@saleId AND tenantId=@tenantId').run({ saleId, tenantId });
+            }
+          }
+        }
+
+        try {
+          db.prepare('DELETE FROM "LoyaltyEvent" WHERE customerId=@id AND tenantId=@tenantId').run({ id, tenantId });
+        } catch (e) {}
+
+        db.prepare('DELETE FROM "Customer" WHERE id=@id AND tenantId=@tenantId').run({ id, tenantId });
+      });
+
+      runDelete();
+
+      audit({ userId: user.id, username: user.username }, 'CUSTOMER_DELETE', { entity: 'customer', entityId: id, metadata: { permanent: true, salesDeleted: deleteSales } });
+      return ok(res, { deleted: true, forced: true, salesDeleted: deleteSales });
+    }
+
+    db.prepare('UPDATE "Customer" SET active=0,updatedAt=@t WHERE id=@id').run({ id, t: now() });
     ok(res, { deleted: true });
-  });
+});
 });
 
 // ═══════════════════════════════════════════════════════════════════════════════
@@ -613,6 +764,33 @@ function productRow(p, availMap, totalMap) {
     stockAvailable: (availMap && availMap[p.id]) || 0,
     stockTotal: (totalMap && totalMap[p.id]) || 0,
   };
+}
+
+function getNextSku(db, tenantId = 'default') {
+  const rows = db.prepare('SELECT sku FROM "Product" WHERE tenantId=@tenantId').all({ tenantId });
+  const existingSet = new Set();
+  const seqNums = [];
+  for (const r of rows) {
+    if (r && r.sku) {
+      const s = String(r.sku).trim();
+      existingSet.add(s.toUpperCase());
+      const m = s.match(/^SKU-(\d+)$/i);
+      if (m) {
+        const val = parseInt(m[1], 10);
+        if (val > 0 && val < 500000) seqNums.push(val);
+      }
+    }
+  }
+  let nextNum = 1;
+  if (seqNums.length > 0) {
+    nextNum = Math.max(...seqNums) + 1;
+  }
+  let candidate = 'SKU-' + String(nextNum).padStart(4, '0');
+  while (existingSet.has(candidate.toUpperCase())) {
+    nextNum++;
+    candidate = 'SKU-' + String(nextNum).padStart(4, '0');
+  }
+  return candidate;
 }
 
 router.get('/products', (req, res) => {
@@ -656,8 +834,11 @@ router.post('/products', (req, res) => {
   wrap(res, () => {
     const user = requirePermission(req, 'PRODUCT_CREATE');
     const db = openDb();
-    const { sku, nameAr, nameEn, genericName, barcode, categoryId, manufacturer, unit, packSize, isWeighable, purchasePrice, sellingPrice, minSellingPrice, taxRate, reorderLevel, active, notes } = req.body || {};
-    if (!sku || !nameAr || sellingPrice === undefined) throw ApiError('VALIDATION', 'sku, nameAr, sellingPrice مطلوبة', 400);
+    let { sku, nameAr, nameEn, genericName, barcode, categoryId, manufacturer, unit, packSize, isWeighable, purchasePrice, sellingPrice, minSellingPrice, taxRate, reorderLevel, active, notes, initialStock } = req.body || {};
+    if (!nameAr || sellingPrice === undefined) throw ApiError('VALIDATION', 'nameAr, sellingPrice مطلوبة', 400);
+    if (!sku || !sku.trim()) {
+      sku = getNextSku(db);
+    }
     if (db.prepare('SELECT id FROM "Product" WHERE tenantId=@tenantId AND sku=@sku').get({ tenantId: 'default', sku: sku.trim() })) throw ApiError('SKU_DUPLICATE', 'الكود الداخلي مستخدم لصنف آخر', 409);
     const normBarcode = normalizeBarcode(barcode);
     if (normBarcode) {
@@ -667,18 +848,78 @@ router.post('/products', (req, res) => {
       }
     }
     if (categoryId && !db.prepare('SELECT id FROM "Category" WHERE id=@id AND tenantId=@tenantId').get({ id: categoryId, tenantId: 'default' })) throw ApiError('CATEGORY_NOT_FOUND', 'التصنيف غير موجود', 400);
+    
     const id = newId();
-    db.prepare('INSERT INTO "Product" (id,tenantId,sku,nameAr,nameEn,genericName,barcode,categoryId,manufacturer,unit,packSize,isWeighable,purchasePrice,sellingPrice,minSellingPrice,taxRate,reorderLevel,active,notes,updatedAt) VALUES (@id,@tenantId,@sku,@nameAr,@nameEn,@genericName,@barcode,@categoryId,@manufacturer,@unit,@packSize,@isWeighable,@purchasePrice,@sellingPrice,@minSellingPrice,@taxRate,@reorderLevel,@active,@notes,@t)')
-      .run({ id, tenantId: 'default', sku: sku.trim(), nameAr: nameAr.trim(), nameEn: nameEn || null, genericName: genericName || null, barcode: normBarcode, categoryId: categoryId || null, manufacturer: manufacturer || null, unit: unit || 'piece', packSize: packSize || 1, isWeighable: bool(isWeighable || false), purchasePrice: purchasePrice || 0, sellingPrice: Number(sellingPrice), minSellingPrice: minSellingPrice || null, taxRate: taxRate || 0, reorderLevel: reorderLevel !== undefined ? reorderLevel : 10, active: active !== false ? 1 : 0, notes: notes || null, t: now() });
-    audit({ userId: user.id, username: user.username }, 'PRODUCT_CREATE', { entity: 'product', entityId: id, metadata: { sku, nameAr } });
-    ok(res, { id, sku: sku.trim(), nameAr: nameAr.trim(), active: active !== false }, 201);
+    const initialQty = Number(initialStock || 0);
+    if (initialQty < 0) throw ApiError('VALIDATION', 'العدد المبدئي لا يمكن أن يكون سالباً', 400);
+
+    transaction((txDb) => {
+      txDb.prepare('INSERT INTO "Product" (id,tenantId,sku,nameAr,nameEn,genericName,barcode,categoryId,manufacturer,unit,packSize,isWeighable,purchasePrice,sellingPrice,minSellingPrice,taxRate,reorderLevel,active,notes,updatedAt) VALUES (@id,@tenantId,@sku,@nameAr,@nameEn,@genericName,@barcode,@categoryId,@manufacturer,@unit,@packSize,@isWeighable,@purchasePrice,@sellingPrice,@minSellingPrice,@taxRate,@reorderLevel,@active,@notes,@t)')
+        .run({ id, tenantId: 'default', sku: sku.trim(), nameAr: nameAr.trim(), nameEn: nameEn || null, genericName: genericName || null, barcode: normBarcode, categoryId: categoryId || null, manufacturer: manufacturer || null, unit: unit || 'piece', packSize: packSize || 1, isWeighable: bool(isWeighable || false), purchasePrice: purchasePrice || 0, sellingPrice: Number(sellingPrice), minSellingPrice: minSellingPrice || null, taxRate: taxRate || 0, reorderLevel: reorderLevel !== undefined ? reorderLevel : 10, active: active !== false ? 1 : 0, notes: notes || null, t: now() });
+
+      if (initialQty > 0) {
+        const batchId = newId();
+        const batchNo = `INIT-${Date.now().toString().slice(-6)}`;
+        const cost = Number(purchasePrice || 0);
+        const sell = Number(sellingPrice);
+        txDb.prepare(`
+          INSERT INTO "Batch" (id, tenantId, productId, batchNo, expiryDate, quantity, costPrice, sellPrice, status, updatedAt)
+          VALUES (@id, @tenantId, @productId, @batchNo, NULL, @quantity, @costPrice, @sellPrice, 'ACTIVE', @t)
+        `).run({
+          id: batchId,
+          tenantId: 'default',
+          productId: id,
+          batchNo,
+          quantity: initialQty,
+          costPrice: cost,
+          sellPrice: sell,
+          t: now()
+        });
+
+        txDb.prepare(`
+          INSERT INTO "StockMovement" (id, tenantId, productId, batchId, type, quantity, unitCost, refType, refId, note, userId, createdAt)
+          VALUES (@id, @tenantId, @productId, @batchId, 'INITIAL', @quantity, @unitCost, 'product', @refId, @note, @userId, @t)
+        `).run({
+          id: newId(),
+          tenantId: 'default',
+          productId: id,
+          batchId,
+          quantity: initialQty,
+          unitCost: cost,
+          refId: id,
+          note: 'رصيد افتتاحي عند إضافة الصنف',
+          userId: user.id,
+          t: now()
+        });
+      }
+    });
+
+    audit({ userId: user.id, username: user.username }, 'PRODUCT_CREATE', { entity: 'product', entityId: id, metadata: { sku, nameAr, initialStock: initialQty } });
+    ok(res, { id, sku: sku.trim(), nameAr: nameAr.trim(), active: active !== false, initialStock: initialQty }, 201);
   });
 });
 
 router.post('/products/bulk', (req, res) => {
   wrap(res, () => {
+    const { items, ids, action } = req.body || {};
+    if (Array.isArray(ids) && (action === 'activate' || action === 'deactivate')) {
+      const user = requirePermission(req, 'PRODUCT_EDIT');
+      if (ids.length === 0) return ok(res, { updated: 0 });
+      const db = openDb();
+      const activeVal = action === 'activate' ? 1 : 0;
+      const stmt = db.prepare('UPDATE "Product" SET active=@active, updatedAt=@t WHERE id=@id AND tenantId=@tenantId');
+      const t = now();
+      let updated = 0;
+      db.transaction(() => {
+        for (const id of ids) {
+          const info = stmt.run({ active: activeVal, t, id, tenantId: 'default' });
+          if (info.changes > 0) updated++;
+        }
+      })();
+      audit({ userId: user.id, username: user.username }, 'PRODUCT_BULK_STATUS', { metadata: { action, count: updated } });
+      return ok(res, { updated });
+    }
     const user = requirePermission(req, 'PRODUCT_CREATE');
-    const { items } = req.body || {};
     if (!Array.isArray(items) || !items.length) throw ApiError('VALIDATION', 'قائمة المنتجات فارغة', 400);
     const db = openDb();
     let created = 0, skipped = 0;
@@ -686,13 +927,38 @@ router.post('/products/bulk', (req, res) => {
       try {
         if (!item.sku || !item.nameAr || item.sellingPrice === undefined) { skipped++; continue; }
         if (db.prepare('SELECT id FROM "Product" WHERE tenantId=@tenantId AND sku=@sku').get({ tenantId: 'default', sku: item.sku.trim() })) { skipped++; continue; }
+        const prodId = newId();
+        const initialQty = Number(item.initialStock || 0);
         db.prepare('INSERT INTO "Product" (id,tenantId,sku,nameAr,nameEn,barcode,unit,purchasePrice,sellingPrice,taxRate,reorderLevel,active,updatedAt) VALUES (@id,@tenantId,@sku,@nameAr,@nameEn,@barcode,@unit,@purchasePrice,@sellingPrice,@taxRate,@reorderLevel,1,@t)')
-          .run({ id: newId(), tenantId: 'default', sku: item.sku.trim(), nameAr: item.nameAr.trim(), nameEn: item.nameEn || null, barcode: normalizeBarcode(item.barcode), unit: item.unit || 'piece', purchasePrice: item.purchasePrice || 0, sellingPrice: Number(item.sellingPrice), taxRate: item.taxRate || 0, reorderLevel: item.reorderLevel || 10, t: now() });
+          .run({ id: prodId, tenantId: 'default', sku: item.sku.trim(), nameAr: item.nameAr.trim(), nameEn: item.nameEn || null, barcode: normalizeBarcode(item.barcode), unit: item.unit || 'piece', purchasePrice: item.purchasePrice || 0, sellingPrice: Number(item.sellingPrice), taxRate: item.taxRate || 0, reorderLevel: item.reorderLevel || 10, t: now() });
+        if (initialQty > 0) {
+          const batchId = newId();
+          const batchNo = `INIT-${Date.now().toString().slice(-6)}`;
+          const cost = Number(item.purchasePrice || 0);
+          const sell = Number(item.sellingPrice);
+          db.prepare(`
+            INSERT INTO "Batch" (id, tenantId, productId, batchNo, expiryDate, quantity, costPrice, sellPrice, status, updatedAt)
+            VALUES (@id, @tenantId, @productId, @batchNo, NULL, @quantity, @costPrice, @sellPrice, 'ACTIVE', @t)
+          `).run({ id: batchId, tenantId: 'default', productId: prodId, batchNo, quantity: initialQty, costPrice: cost, sellPrice: sell, t: now() });
+          db.prepare(`
+            INSERT INTO "StockMovement" (id, tenantId, productId, batchId, type, quantity, unitCost, refType, refId, note, userId, createdAt)
+            VALUES (@id, @tenantId, @productId, @batchId, 'INITIAL', @quantity, @unitCost, 'product', @refId, @note, @userId, @t)
+          `).run({ id: newId(), tenantId: 'default', productId: prodId, batchId, quantity: initialQty, unitCost: cost, refId: prodId, note: 'رصيد افتتاحي (استيراد)', userId: user.id, t: now() });
+        }
         created++;
       } catch { skipped++; }
     }
     audit({ userId: user.id, username: user.username }, 'PRODUCT_BULK_IMPORT', { metadata: { created, skipped } });
     ok(res, { created, skipped }, 201);
+  });
+});
+
+router.get('/products/next-sku', (req, res) => {
+  wrap(res, () => {
+    requirePermission(req, 'PRODUCT_VIEW');
+    const db = openDb();
+    const nextSku = getNextSku(db);
+    ok(res, { nextSku });
   });
 });
 
@@ -781,37 +1047,164 @@ router.delete('/products/:id', (req, res) => {
   wrap(res, () => {
     const user = requirePermission(req, 'PRODUCT_DELETE');
     const db = openDb();
-    const row = db.prepare('SELECT * FROM "Product" WHERE id=@id AND tenantId=@tenantId').get({ id: req.params.id, tenantId: 'default' });
+    const id = req.params.id;
+    const tenantId = 'default';
+    const row = db.prepare('SELECT * FROM "Product" WHERE id=@id AND tenantId=@tenantId').get({ id, tenantId });
     if (!row) throw ApiError('NOT_FOUND', 'المنتج غير موجود', 404);
     const force = req.query.force === 'true';
     const deleteSales = req.query.deleteSales === 'true';
-    db.prepare('UPDATE "Product" SET active=0,updatedAt=@t WHERE id=@id').run({ id: req.params.id, t: now() });
-    audit({ userId: user.id, username: user.username }, 'PRODUCT_DELETE', { entity: 'product', entityId: req.params.id });
+
     if (force) {
-      return ok(res, { deactivated: true, forced: true, salesDeleted: deleteSales });
+      const runDelete = db.transaction(() => {
+        // 1. Check Sales referencing this product
+        const saleItemRows = db.prepare('SELECT DISTINCT saleId FROM "SaleItem" WHERE productId=@id AND tenantId=@tenantId').all({ id, tenantId });
+
+        if (saleItemRows.length > 0) {
+          if (!deleteSales) {
+            throw ApiError(
+              'PRODUCT_IN_USE',
+              `لا يمكن حذف الصنف نهائياً لوجود ${saleItemRows.length} فاتورة مبيعات مرتبطة به. يرجى تفعيل خيار «حذف الفواتير المرتبطة بهذا العنصر» لإتمام الحذف النهائي.`,
+              409
+            );
+          }
+
+          for (const s of saleItemRows) {
+            const saleId = s.saleId;
+            // Delete ReturnItems linked to Returns of this Sale
+            db.prepare('DELETE FROM "ReturnItem" WHERE returnId IN (SELECT id FROM "Return" WHERE saleId=@saleId AND tenantId=@tenantId)').run({ saleId, tenantId });
+            // Delete Returns for this Sale
+            db.prepare('DELETE FROM "Return" WHERE saleId=@saleId AND tenantId=@tenantId').run({ saleId, tenantId });
+            // Delete SaleItems for this Sale
+            db.prepare('DELETE FROM "SaleItem" WHERE saleId=@saleId AND tenantId=@tenantId').run({ saleId, tenantId });
+            // Delete StockMovements created by this Sale
+            db.prepare('DELETE FROM "StockMovement" WHERE refType=\'SALE\' AND refId=@saleId AND tenantId=@tenantId').run({ saleId, tenantId });
+            // Delete the Sale itself
+            db.prepare('DELETE FROM "Sale" WHERE id=@saleId AND tenantId=@tenantId').run({ saleId, tenantId });
+          }
+        }
+
+        // 2. Delete any ReturnItems directly referencing this productId
+        db.prepare('DELETE FROM "ReturnItem" WHERE productId=@id AND tenantId=@tenantId').run({ id, tenantId });
+
+        // 3. Delete any StocktakeLines referencing this productId
+        db.prepare('DELETE FROM "StocktakeLine" WHERE productId=@id AND tenantId=@tenantId').run({ id, tenantId });
+
+        // 4. Purchases and PurchaseItems referencing this productId
+        const purchaseItemRows = db.prepare('SELECT DISTINCT purchaseId FROM "PurchaseItem" WHERE productId=@id AND tenantId=@tenantId').all({ id, tenantId });
+        for (const p of purchaseItemRows) {
+          const purchaseId = p.purchaseId;
+          // Delete PurchaseItem for this product
+          db.prepare('DELETE FROM "PurchaseItem" WHERE purchaseId=@purchaseId AND productId=@id AND tenantId=@tenantId').run({ purchaseId, id, tenantId });
+          // Check if purchase has any other items left
+          const remaining = db.prepare('SELECT COUNT(*) as count, COALESCE(SUM(total), 0) as totalSum FROM "PurchaseItem" WHERE purchaseId=@purchaseId AND tenantId=@tenantId').get({ purchaseId, tenantId });
+          if (remaining.count === 0) {
+            // Delete associated purchase stock movements
+            db.prepare('DELETE FROM "StockMovement" WHERE refType=\'PURCHASE\' AND refId=@purchaseId AND tenantId=@tenantId').run({ purchaseId, tenantId });
+            // Delete empty purchase
+            db.prepare('DELETE FROM "Purchase" WHERE id=@purchaseId AND tenantId=@tenantId').run({ purchaseId, tenantId });
+          } else {
+            // Recalculate purchase subtotal and total
+            db.prepare('UPDATE "Purchase" SET subtotal=@totalSum, total=@totalSum, updatedAt=@t WHERE id=@purchaseId AND tenantId=@tenantId').run({ totalSum: remaining.totalSum, t: now(), purchaseId, tenantId });
+          }
+        }
+
+        // 5. Delete all StockMovements referencing this productId
+        db.prepare('DELETE FROM "StockMovement" WHERE productId=@id AND tenantId=@tenantId').run({ id, tenantId });
+
+        // 6. Delete all Batches referencing this productId
+        db.prepare('DELETE FROM "Batch" WHERE productId=@id AND tenantId=@tenantId').run({ id, tenantId });
+
+        // 7. Finally, delete the Product itself!
+        db.prepare('DELETE FROM "Product" WHERE id=@id AND tenantId=@tenantId').run({ id, tenantId });
+      });
+
+      runDelete();
+
+      audit({ userId: user.id, username: user.username }, 'PRODUCT_DELETE', {
+        entity: 'product',
+        entityId: id,
+        metadata: { permanent: true, nameAr: row.nameAr, sku: row.sku, salesDeleted: deleteSales }
+      });
+
+      return ok(res, { deleted: true, deactivated: true, forced: true, salesDeleted: deleteSales });
     }
+
+    db.prepare('UPDATE "Product" SET active=0,updatedAt=@t WHERE id=@id').run({ id, t: now() });
+    audit({ userId: user.id, username: user.username }, 'PRODUCT_DELETE', { entity: 'product', entityId: id, metadata: { action: 'deactivate' } });
     ok(res, { deactivated: true });
-  });
+});
 });
 
 // ═══════════════════════════════════════════════════════════════════════════════
 // INVENTORY
 // ═══════════════════════════════════════════════════════════════════════════════
+function stockBatchStatsMap(db, productIds, tenantId = 'default') {
+  if (!productIds || productIds.length === 0) return {};
+  const ph = productIds.map(() => '?').join(',');
+  const rows = db.prepare(
+    `SELECT productId,
+            COUNT(*) as batchCount,
+            COALESCE(SUM(CASE WHEN status='ACTIVE' AND quantity>0 THEN quantity * costPrice ELSE 0 END), 0) as stockValue
+     FROM "Batch"
+     WHERE tenantId=? AND productId IN (${ph}) AND quantity>0
+     GROUP BY productId`
+  ).all(tenantId, ...productIds);
+  const map = {};
+  for (const r of rows) map[r.productId] = { batchCount: r.batchCount || 0, stockValue: r.stockValue || 0 };
+  return map;
+}
+
 router.get('/inventory', (req, res) => {
   wrap(res, () => {
     requirePermission(req, 'INVENTORY_VIEW');
     const db = openDb();
     const { page, pageSize, skip, take } = pageParams(req);
     const q = req.query.q ? `%${req.query.q}%` : null;
+    const categoryId = req.query.categoryId;
+    const filter = req.query.filter;
     let where = 'WHERE p.tenantId=@tenantId AND p.active=1';
     const params = { tenantId: 'default' };
     if (q) { where += ' AND (p.nameAr LIKE @q OR p.sku LIKE @q OR p.barcode LIKE @q)'; params.q = q; }
+    if (categoryId && categoryId !== 'all') { where += ' AND p.categoryId=@categoryId'; params.categoryId = categoryId; }
+
+    const selectSql = `SELECT p.*, c.nameAr as categoryName FROM "Product" p LEFT JOIN "Category" c ON p.categoryId=c.id ${where} ORDER BY p.nameAr ASC`;
+
+    if (filter === 'low') {
+      const allRows = db.prepare(selectSql).all(params);
+      const allIds = allRows.map(p => p.id);
+      const availMap = stockAvailableMap(db, allIds, 'default');
+      const totalMap = stockTotalMap(db, allIds, 'default');
+      const statsMap = stockBatchStatsMap(db, allIds, 'default');
+      const filtered = allRows.map(p => {
+        const row = productRow(p, availMap, totalMap);
+        const stats = statsMap[p.id] || { batchCount: 0, stockValue: 0 };
+        return {
+          ...row,
+          productId: p.id,
+          batchCount: stats.batchCount,
+          stockValue: r2(stats.stockValue),
+        };
+      }).filter(r => r.stockAvailable <= (r.reorderLevel || 0) + 1e-9);
+      return ok(res, { items: filtered.slice(skip, skip + take), total: filtered.length, page, pageSize });
+    }
+
     const total = db.prepare(`SELECT COUNT(*) as c FROM "Product" p ${where}`).get(params).c;
-    const rows = db.prepare(`SELECT p.*, c.nameAr as categoryName FROM "Product" p LEFT JOIN "Category" c ON p.categoryId=c.id ${where} ORDER BY p.nameAr ASC LIMIT @take OFFSET @skip`).all({ ...params, take, skip });
+    const rows = db.prepare(`${selectSql} LIMIT @take OFFSET @skip`).all({ ...params, take, skip });
     const ids = rows.map(p => p.id);
     const availMap = stockAvailableMap(db, ids, 'default');
     const totalMap = stockTotalMap(db, ids, 'default');
-    ok(res, { items: rows.map(p => productRow(p, availMap, totalMap)), total, page, pageSize });
+    const statsMap = stockBatchStatsMap(db, ids, 'default');
+    const items = rows.map(p => {
+      const row = productRow(p, availMap, totalMap);
+      const stats = statsMap[p.id] || { batchCount: 0, stockValue: 0 };
+      return {
+        ...row,
+        productId: p.id,
+        batchCount: stats.batchCount,
+        stockValue: r2(stats.stockValue),
+      };
+    });
+    ok(res, { items, total, page, pageSize });
   });
 });
 
@@ -1113,7 +1506,11 @@ router.get('/sales/suspended', (req, res) => {
     requirePermission(req, 'SALES_VIEW');
     const db = openDb();
     const rows = db.prepare('SELECT * FROM "SuspendedCart" WHERE tenantId=@tenantId ORDER BY createdAt DESC').all({ tenantId: 'default' });
-    ok(res, rows.map(r => ({ ...r, cart: safeJson(r.cart, []) })));
+    ok(res, rows.map(r => {
+      let parsed = safeJson(r.cart, []);
+      if (typeof parsed === 'string') parsed = safeJson(parsed, []);
+      return { ...r, cart: Array.isArray(parsed) ? parsed : [] };
+    }));
   });
 });
 
@@ -1124,8 +1521,9 @@ router.post('/sales/suspended', (req, res) => {
     if (!label || !cart) throw ApiError('VALIDATION', 'label و cart مطلوبان', 400);
     const db = openDb();
     const id = newId();
+    const cartStr = typeof cart === 'string' ? cart : JSON.stringify(cart);
     db.prepare('INSERT INTO "SuspendedCart" (id,tenantId,label,cart,userId,createdAt) VALUES (@id,@tenantId,@label,@cart,@userId,@t)')
-      .run({ id, tenantId: 'default', label, cart: JSON.stringify(cart), userId: user.id, t: now() });
+      .run({ id, tenantId: 'default', label, cart: cartStr, userId: user.id, t: now() });
     ok(res, { id, label }, 201);
   });
 });
@@ -1135,6 +1533,17 @@ router.delete('/sales/suspended/:id', (req, res) => {
     requirePermission(req, 'SALES_CREATE');
     const db = openDb();
     db.prepare('DELETE FROM "SuspendedCart" WHERE id=@id AND tenantId=@tenantId').run({ id: req.params.id, tenantId: 'default' });
+    ok(res, { deleted: true });
+  });
+});
+
+router.delete('/sales/suspended', (req, res) => {
+  wrap(res, () => {
+    requirePermission(req, 'SALES_CREATE');
+    const id = req.body?.id || req.query?.id;
+    if (!id) throw ApiError('VALIDATION', 'id مطلوب', 400);
+    const db = openDb();
+    db.prepare('DELETE FROM "SuspendedCart" WHERE id=@id AND tenantId=@tenantId').run({ id, tenantId: 'default' });
     ok(res, { deleted: true });
   });
 });
@@ -1246,7 +1655,7 @@ router.post('/sales', (req, res) => {
   wrap(res, () => {
     const user = requirePermission(req, 'SALES_CREATE');
     const body = req.body || {};
-    const items = body.items || [];
+    const items = body.items || body.lines || [];
     if (!items.length) throw ApiError('EMPTY_CART', 'الفاتورة فارغة', 400);
     const settings = getSettings('default');
     const posConfig = settings.pos || {};
@@ -1311,6 +1720,10 @@ router.post('/sales', (req, res) => {
       }
 
       const invoiceDiscount = r2(Math.max(0, body.discount || 0));
+      const hasDiscount = invoiceDiscount > 0 || lineRows.some(l => l.discount > 0);
+      if (hasDiscount && !user.permissions.includes('SALES_DISCOUNT') && user.roleKey !== 'owner') {
+        throw ApiError('FORBIDDEN', 'لا تملك صلاحية منح خصم على المبيعات', 403);
+      }
       if (invoiceDiscount > r2(subtotal + totalTax)) throw ApiError('DISCOUNT_TOO_LARGE', 'خصم الفاتورة أكبر من قيمتها', 400);
 
       // Validate customer
@@ -1560,8 +1973,9 @@ function _receivePurchase(db, user, purchaseId, tenantId) {
     const currentStockRow = db.prepare('SELECT COALESCE(SUM(quantity),0) as q FROM "Batch" WHERE productId=@productId AND tenantId=@tenantId AND status=\'ACTIVE\' AND quantity>0').get({ productId: item.productId, tenantId });
     const currentStock = currentStockRow ? currentStockRow.q : 0;
     const oldProdCost = product.purchasePrice || 0;
-    const totalCombined = r3(currentStock + item.quantity);
-    const prodWac = totalCombined > 0 ? r2(((currentStock * oldProdCost) + (item.quantity * item.unitCost)) / totalCombined) : item.unitCost;
+    const prevStock = Math.max(0, r3(currentStock - item.quantity));
+    const totalCombined = currentStock;
+    const prodWac = totalCombined > 0 ? r2(((prevStock * oldProdCost) + (item.quantity * item.unitCost)) / totalCombined) : item.unitCost;
     db.prepare('UPDATE "Product" SET purchasePrice=@cost,updatedAt=@t WHERE id=@id AND tenantId=@tenantId').run({ cost: prodWac, t: now(), id: item.productId, tenantId });
   }
   db.prepare("UPDATE \"Purchase\" SET status='RECEIVED',receivedAt=@t,updatedAt=@t WHERE id=@id").run({ t: now(), id: purchaseId });
@@ -1750,6 +2164,13 @@ router.post('/returns', (req, res) => {
           }
         }
       }
+      // Update Sale status to PARTIALLY_RETURNED or RETURNED
+      const saleCheck = db.prepare('SELECT SUM(quantity) as totQty, SUM(returnedQty) as totRet FROM "SaleItem" WHERE saleId=@saleId AND tenantId=@tenantId').get({ saleId, tenantId: 'default' });
+      if (saleCheck && saleCheck.totRet > 0) {
+        const newSaleStatus = saleCheck.totRet >= (saleCheck.totQty - 1e-9) ? 'RETURNED' : 'PARTIALLY_RETURNED';
+        db.prepare('UPDATE "Sale" SET status=@status, updatedAt=@t WHERE id=@id').run({ status: newSaleStatus, t: now(), id: saleId });
+      }
+
       return { returnId, returnNo, total };
     });
     audit({ userId: user.id, username: user.username }, 'RETURN_CREATE', { entity: 'return', entityId: result.returnId, metadata: { returnNo: result.returnNo, total: result.total } });
@@ -2331,7 +2752,14 @@ router.post('/backup', (req, res) => {
     const counts = {};
     const tables = ['Product', 'Category', 'Supplier', 'Customer', 'Sale', 'Purchase', 'Batch'];
     for (const t of tables) {
-      try { counts[t] = db.prepare(`SELECT COUNT(*) as c FROM "${t}" WHERE tenantId=@tenantId`).get({ tenantId: "default" }).c; } catch (e) { counts[t] = 0; }
+      try {
+        const c = db.prepare(`SELECT COUNT(*) as c FROM "${t}" WHERE tenantId=@tenantId`).get({ tenantId: "default" }).c;
+        counts[t] = c;
+        counts[t.toLowerCase()] = c;
+      } catch (e) {
+        counts[t] = 0;
+        counts[t.toLowerCase()] = 0;
+      }
     }
     const id = newId();
     const createdAt = now();
@@ -2422,10 +2850,14 @@ router.get('/audit', (req, res) => {
     const db = openDb();
     const { page, pageSize, skip, take } = pageParams(req, 50);
     const action = req.query.action;
+    const result = req.query.result;
+    const q = req.query.q ? `%${req.query.q.trim()}%` : null;
     const range = dateRange(req);
     let where = 'WHERE tenantId=@tenantId';
     const params = { tenantId: 'default' };
-    if (action) { where += ' AND action=@action'; params.action = action; }
+    if (action && action !== 'all') { where += ' AND action=@action'; params.action = action; }
+    if (result && result !== 'all') { where += ' AND result=@result'; params.result = result; }
+    if (q) { where += ' AND (username LIKE @q OR action LIKE @q OR entity LIKE @q OR entityId LIKE @q)'; params.q = q; }
     if (range) { where += ' AND createdAt BETWEEN @from AND @to'; params.from = range.from; params.to = range.to; }
     const total = db.prepare(`SELECT COUNT(*) as c FROM "AuditLog" ${where}`).get(params).c;
     const rows = db.prepare(`SELECT * FROM "AuditLog" ${where} ORDER BY createdAt DESC LIMIT @take OFFSET @skip`).all({ ...params, take, skip });
@@ -2447,13 +2879,29 @@ router.get('/diagnostics', (req, res) => {
       productId: 'LIBRARY_STORE',
       phase: 'READY',
       licenseState: 'ACTIVE',
-      version: '1.0.0',
+      version: '1.0.1',
       build: '2026092201',
       branding: settings.branding,
       business: settings.business,
       localization: settings.localization,
       pos: settings.pos,
-      modules: { supermarket: true, pos: true, purchasing: true, inventory: true, customers: true, reports: true, stocktaking: true },
+      hardware: settings.hardware,
+      hardwareCaps: { receiptPrinter: true, cashDrawer: true, barcodeScanner: true },
+      modules: {
+        supermarket: true,
+        pos: true,
+        purchasing: true,
+        inventory: true,
+        customers: true,
+        reports: true,
+        stocktaking: true,
+        loyalty: true,
+        printing: true,
+        scanner: true,
+        cashDrawer: true,
+        multiUser: true,
+        backups: true,
+      },
       tenantId: 'default',
     };
     const tables = [
@@ -2495,6 +2943,12 @@ router.get('/diagnostics', (req, res) => {
       tenantTableCounts,
       generatedAt: new Date().toISOString(),
     });
+  });
+});
+
+router.post('/activation/validate', (req, res) => {
+  wrap(res, () => {
+    ok(res, { valid: true, state: 'ACTIVE', offline: true, timestamp: now() });
   });
 });
 

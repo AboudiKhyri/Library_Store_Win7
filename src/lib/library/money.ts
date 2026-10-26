@@ -22,11 +22,12 @@ export function formatNumber(n: number, loc?: LocalizationConfig): string {
 }
 
 export function toSafeDate(val: unknown): Date | null {
-  if (val === null || val === undefined || val === '') return null
+  if (val === null || val === undefined || val === '' || typeof val === 'boolean') return null
   if (val instanceof Date) {
     return isNaN(val.getTime()) ? null : val
   }
   if (typeof val === 'number') {
+    if (!Number.isFinite(val) || val <= 0) return null
     const d = new Date(val)
     return isNaN(d.getTime()) ? null : d
   }
